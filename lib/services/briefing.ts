@@ -8,11 +8,12 @@ import { getCachedOrLoad } from "@/lib/server/cache";
 import { EMPTY_HOME_EDITORIAL, type ApiEnvelope, type HomeEditorial } from "@/lib/types";
 
 const briefingCacheTtlSeconds = 7200;
-const briefingCacheKey = "briefing:v2:daily";
+const briefingCacheKey = "briefing:v3:daily";
 const maxListingItems = 6;
 const maxArticleItems = 4;
 const maxBodyChars = 5000;
-const briefingTimeoutMs = 15000;
+const articleBundleTimeoutMs = 5000;
+const deepseekBriefingTimeoutMs = 6000;
 
 const sourceBundleSchema = z.object({
   generatedAt: z.string(),
@@ -50,8 +51,31 @@ function hasBriefingContent(briefing: HomeEditorial) {
   );
 }
 
+function buildListingSummary(item: z.infer<typeof sourceBundleSchema>["listing"][number]) {
+  if (item.category === "transfers") {
+    return "官方列表提到了转会相关动态，详情以原文为准。";
+  }
+
+  if (item.category === "matchday") {
+    return "官方列表已更新比赛日内容，详情以原文为准。";
+  }
+
+  return "官方新闻列表已有更新，详情以原文为准。";
+}
+
 function buildFallbackBriefingFromSources(sourceBundle: z.infer<typeof sourceBundleSchema>): HomeEditorial {
-  const articles = sourceBundle.articles;
+  const articles =
+    sourceBundle.articles.length > 0
+      ? sourceBundle.articles
+      : sourceBundle.listing.map((item) => ({
+          title: item.title,
+          source: item.source,
+          publishedAt: item.publishedAt,
+          url: item.url,
+          category: item.category,
+          excerpt: buildListingSummary(item),
+          body: buildListingSummary(item)
+        }));
   const listing = sourceBundle.listing;
 
   return {
@@ -116,31 +140,12 @@ function withTimeout<T>(run: () => Promise<T>, timeoutMs: number, fallback: T): 
   });
 }
 
-export async function buildSourceBundle() {
+async function buildListingBundle() {
   const listing = (await interOfficialProvider.listNews())
     .filter((item) => item.sourceType === "official")
     .slice(0, maxListingItems);
 
-  const articleDetails = await Promise.all(
-    listing.slice(0, maxArticleItems).map(async (item) => {
-      const detail = await interOfficialProvider.getArticle(item.canonicalUrl);
-      if (!detail) {
-        return null;
-      }
-
-      return {
-        title: detail.title,
-        source: detail.sourceName,
-        publishedAt: detail.publishedAt,
-        url: detail.canonicalUrl,
-        category: detail.category,
-        excerpt: detail.excerpt,
-        body: detail.body.slice(0, maxBodyChars)
-      };
-    })
-  );
-
-  return sourceBundleSchema.parse({
+  return {
     generatedAt: new Date().toISOString(),
     listingUrl: `${env.interOfficialBaseUrl}/news`,
     listing: listing.map((item) => ({
@@ -149,7 +154,39 @@ export async function buildSourceBundle() {
       publishedAt: item.publishedAt,
       url: item.canonicalUrl,
       category: item.category
-    })),
+    }))
+  };
+}
+
+export async function buildSourceBundle() {
+  const listingBundle = await buildListingBundle();
+
+  const articleDetails = await withTimeout(
+    async () =>
+      Promise.all(
+        listingBundle.listing.slice(0, maxArticleItems).map(async (item) => {
+          const detail = await interOfficialProvider.getArticle(item.url);
+          if (!detail) {
+            return null;
+          }
+
+          return {
+            title: detail.title,
+            source: detail.sourceName,
+            publishedAt: detail.publishedAt,
+            url: detail.canonicalUrl,
+            category: detail.category,
+            excerpt: detail.excerpt,
+            body: detail.body.slice(0, maxBodyChars)
+          };
+        })
+      ),
+    articleBundleTimeoutMs,
+    []
+  );
+
+  return sourceBundleSchema.parse({
+    ...listingBundle,
     articles: articleDetails.filter(Boolean)
   });
 }
@@ -160,15 +197,18 @@ export async function generateDailyBriefing(): Promise<HomeEditorial> {
 }
 
 export async function getDailyBriefingData(): Promise<ApiEnvelope<HomeEditorial>> {
-  const result = await withTimeout(
-    () =>
-      getCachedOrLoad(briefingCacheKey, briefingCacheTtlSeconds, async () => {
-        const sourceBundle = await buildSourceBundle();
-        if (sourceBundle.articles.length === 0) {
-          return sourceBundle.listing.length > 0 ? buildFallbackBriefingFromSources(sourceBundle) : createBriefingFallback();
-        }
+  const result = await getCachedOrLoad(briefingCacheKey, briefingCacheTtlSeconds, async () => {
+    const sourceBundle = await buildSourceBundle();
+    const fallbackBriefing =
+      sourceBundle.listing.length > 0 ? buildFallbackBriefingFromSources(sourceBundle) : createBriefingFallback();
 
-        const response = await deepseek.chat.completions.create({
+    if (sourceBundle.articles.length === 0 || !env.deepseekApiKey) {
+      return fallbackBriefing;
+    }
+
+    const response = await withTimeout(
+      () =>
+        deepseek.chat.completions.create({
           model: env.deepseekModel,
           response_format: { type: "json_object" },
           messages: [
@@ -245,19 +285,23 @@ Source materials:
 ${JSON.stringify(sourceBundle)}`
             }
           ]
-        });
+        }),
+      deepseekBriefingTimeoutMs,
+      null
+    );
 
-        const raw = response.choices[0]?.message?.content ?? "{}";
-        const parsed = homeEditorialSchema.parse(JSON.parse(stripCodeFence(raw)));
-        return hasBriefingContent(parsed) ? parsed : buildFallbackBriefingFromSources(sourceBundle);
-      }),
-    briefingTimeoutMs,
-    {
-      data: createBriefingFallback(),
-      stale: true,
-      syncedAt: new Date().toISOString()
+    if (!response) {
+      return fallbackBriefing;
     }
-  );
+
+    try {
+      const raw = response.choices[0]?.message?.content ?? "{}";
+      const parsed = homeEditorialSchema.parse(JSON.parse(stripCodeFence(raw)));
+      return hasBriefingContent(parsed) ? parsed : fallbackBriefing;
+    } catch {
+      return fallbackBriefing;
+    }
+  });
 
   return {
     data: result.data,
