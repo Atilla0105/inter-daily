@@ -12,8 +12,10 @@ import type {
 import { EMPTY_HOME_EDITORIAL, type HomeEditorial } from "@/lib/types";
 
 const trustedHosts = new Set(["www.inter.it", "inter.it"]);
-const maxToolRounds = 2;
+const maxToolRounds = 3;
 const maxBodyChars = 6000;
+const maxHtmlChars = 40000;
+const maxListingCards = 12;
 const trustedFetchTimeoutMs = 8000;
 const articleReadTimeoutMs = 9000;
 const deepseekRequestTimeoutMs = 12000;
@@ -114,6 +116,79 @@ function stripCodeFence(input: string) {
   return input.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim();
 }
 
+function extractNextData<T>(html: string) {
+  const marker = '<script id="__NEXT_DATA__" type="application/json">';
+  const start = html.indexOf(marker);
+
+  if (start === -1) {
+    return null;
+  }
+
+  const after = html.slice(start + marker.length);
+  const end = after.indexOf("</script>");
+
+  if (end === -1) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(after.slice(0, end)) as T;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeUrlKey(url: string) {
+  try {
+    const parsed = new URL(url);
+    return `${parsed.origin}${parsed.pathname}`.replace(/\/$/, "");
+  } catch {
+    return url.trim().replace(/\/$/, "");
+  }
+}
+
+function normalizePublishedAt(value: unknown) {
+  if (typeof value !== "string" || !value.trim()) {
+    return null;
+  }
+
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+}
+
+function inferCategory(entry: {
+  title?: string | null;
+  subtitle?: string | null;
+  metaDescription?: string | null;
+  categoriesCollection?: {
+    items?: Array<{
+      slug?: string | null;
+    } | null> | null;
+  } | null;
+}) {
+  const slugs = (entry.categoriesCollection?.items ?? [])
+    .map((item) => item?.slug?.toLowerCase().trim())
+    .filter(Boolean) as string[];
+  const haystack = [entry.title, entry.subtitle, entry.metaDescription, ...slugs].join(" ").toLowerCase();
+
+  if (slugs.some((slug) => slug.includes("transfer")) || /\btransfer\b|\bmercato\b|\bcontract\b/.test(haystack)) {
+    return "transfers";
+  }
+
+  if (
+    slugs.some((slug) =>
+      ["team", "tickets", "fixtures", "match-report", "inter-women", "inter-academy", "youth"].includes(slug)
+    ) ||
+    /\bvs\b|\bpreview\b|\bmatch\b|\bline-?ups?\b|\btraining\b|\bcalled up\b|\binternational duty\b|\bserie a\b|\bchampions league\b|\bcoppa\b/.test(
+      haystack
+    )
+  ) {
+    return "matchday";
+  }
+
+  return "official";
+}
+
 function serializeSourceCatalog(sourceCatalog: EditorialSourceCatalogItem[]) {
   return sourceCatalog.map((item) => ({
     id: item.id,
@@ -192,11 +267,133 @@ async function fetchTrustedWebpage(url: string) {
     ok: true,
     url,
     title,
-    text: trimText(text)
+    text: trimText(text),
+    html: html.slice(0, maxHtmlChars),
+    truncated: html.length > maxHtmlChars
   };
 }
 
-async function readOfficialInterArticle(url: string) {
+function parseInterNewsPage(html: string, sourceCatalog: EditorialSourceCatalogItem[]) {
+  const sourceIdByUrl = new Map(sourceCatalog.map((item) => [normalizeUrlKey(item.canonicalUrl), item.id]));
+  const nextData = extractNextData<{
+    props?: {
+      pageProps?: {
+        newsCarousel?: Array<{
+          slug?: string | null;
+          title?: string | null;
+          subtitle?: string | null;
+          metaDescription?: string | null;
+          published?: boolean | null;
+          pageType?: string | null;
+          date?: string | null;
+          sys?: { publishedAt?: string | null; firstPublishedAt?: string | null } | null;
+          categoriesCollection?: {
+            items?: Array<{ slug?: string | null } | null> | null;
+          } | null;
+        }>;
+        moreNews?: Array<{
+          slug?: string | null;
+          title?: string | null;
+          subtitle?: string | null;
+          metaDescription?: string | null;
+          published?: boolean | null;
+          pageType?: string | null;
+          date?: string | null;
+          sys?: { publishedAt?: string | null; firstPublishedAt?: string | null } | null;
+          categoriesCollection?: {
+            items?: Array<{ slug?: string | null } | null> | null;
+          } | null;
+        }>;
+        page?: {
+          nowTrending?: {
+            articlesCollection?: {
+              items?: Array<{
+                slug?: string | null;
+                title?: string | null;
+                subtitle?: string | null;
+                metaDescription?: string | null;
+                published?: boolean | null;
+                pageType?: string | null;
+                date?: string | null;
+                sys?: { publishedAt?: string | null; firstPublishedAt?: string | null } | null;
+                categoriesCollection?: {
+                  items?: Array<{ slug?: string | null } | null> | null;
+                } | null;
+              } | null> | null;
+            } | null;
+          } | null;
+        } | null;
+      } | null;
+    } | null;
+  }>(html);
+
+  const entries = [
+    ...(nextData?.props?.pageProps?.newsCarousel ?? []),
+    ...(nextData?.props?.pageProps?.moreNews ?? []),
+    ...(nextData?.props?.pageProps?.page?.nowTrending?.articlesCollection?.items ?? [])
+  ]
+    .filter(Boolean)
+    .filter((entry) => entry?.published !== false && entry?.pageType !== "landing-page");
+
+  const seen = new Set<string>();
+  const cards = entries
+    .map((entry) => {
+      const slug = entry?.slug?.trim();
+
+      if (!slug || seen.has(slug)) {
+        return null;
+      }
+
+      seen.add(slug);
+      const canonicalUrl = `${env.interOfficialBaseUrl}/news/${slug}`;
+      return {
+        title: entry?.title?.trim() ?? "Inter 官方新闻",
+        canonicalUrl,
+        publishedAt: normalizePublishedAt(entry?.date ?? entry?.sys?.publishedAt ?? entry?.sys?.firstPublishedAt),
+        category: inferCategory(entry ?? {}),
+        matchedSourceId: sourceIdByUrl.get(normalizeUrlKey(canonicalUrl)) ?? null
+      };
+    })
+    .filter(Boolean)
+    .slice(0, maxListingCards);
+
+  if (cards.length > 0) {
+    return {
+      ok: true,
+      cards
+    };
+  }
+
+  const $ = load(html);
+  const fallbackCards = $("a[href*='/news/']")
+    .map((_, element) => {
+      const href = $(element).attr("href");
+      const title = $(element).text().trim();
+
+      if (!href || !title) {
+        return null;
+      }
+
+      const canonicalUrl = href.startsWith("http") ? href : new URL(href, env.interOfficialBaseUrl).toString();
+      return {
+        title,
+        canonicalUrl,
+        publishedAt: null,
+        category: "official",
+        matchedSourceId: sourceIdByUrl.get(normalizeUrlKey(canonicalUrl)) ?? null
+      };
+    })
+    .get()
+    .filter(Boolean)
+    .slice(0, maxListingCards);
+
+  return {
+    ok: true,
+    cards: fallbackCards
+  };
+}
+
+async function extractArticleText(url: string) {
   if (!isTrustedUrl(url)) {
     return {
       ok: false,
@@ -221,31 +418,6 @@ async function readOfficialInterArticle(url: string) {
     excerpt: article.excerpt,
     publishedAt: article.publishedAt,
     body: trimText(article.body)
-  };
-}
-
-async function readSelectedSourceContent(sourceIds: string[], sourceCatalog: EditorialSourceCatalogItem[]) {
-  const targets = sourceCatalog.filter((item) => sourceIds.includes(item.id)).slice(0, 5);
-  const articles = await Promise.all(
-    targets.map(async (item) => {
-      const article = await withTimeout(() => interOfficialProvider.getArticle(item.canonicalUrl), articleReadTimeoutMs, null);
-      if (!article) {
-        return null;
-      }
-
-      return {
-        id: item.id,
-        title: article.title,
-        canonicalUrl: article.canonicalUrl,
-        publishedAt: article.publishedAt,
-        body: trimText(article.body)
-      };
-    })
-  );
-
-  return {
-    ok: true,
-    items: articles.filter(Boolean)
   };
 }
 
@@ -301,8 +473,8 @@ function buildToolDefinitions() {
     {
       type: "function",
       function: {
-        name: "fetch_trusted_webpage",
-        description: "Fetch a trusted Inter official webpage and return cleaned text content.",
+        name: "fetch_url",
+        description: "Fetch raw HTML from a trusted URL",
         parameters: {
           type: "object",
           additionalProperties: false,
@@ -319,8 +491,26 @@ function buildToolDefinitions() {
     {
       type: "function",
       function: {
-        name: "read_official_inter_article",
-        description: "Parse an official Inter news article and return title, excerpt, publishedAt and body.",
+        name: "parse_inter_news_page",
+        description: "Parse Inter news listing page into article cards",
+        parameters: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            html: {
+              type: "string",
+              description: "Raw HTML from the Inter news listing page."
+            }
+          },
+          required: ["html"]
+        }
+      }
+    },
+    {
+      type: "function",
+      function: {
+        name: "extract_article_text",
+        description: "Extract clean article text and metadata from a news article URL",
         parameters: {
           type: "object",
           additionalProperties: false,
@@ -333,25 +523,6 @@ function buildToolDefinitions() {
           required: ["url"]
         }
       }
-    },
-    {
-      type: "function",
-      function: {
-        name: "read_selected_source_content",
-        description: "Read article bodies for specific source ids from the provided source catalog.",
-        parameters: {
-          type: "object",
-          additionalProperties: false,
-          properties: {
-            sourceIds: {
-              type: "array",
-              items: { type: "string" },
-              description: "Source ids from the source catalog."
-            }
-          },
-          required: ["sourceIds"]
-        }
-      }
     }
   ];
 }
@@ -359,16 +530,16 @@ function buildToolDefinitions() {
 async function executeTool(toolCall: ToolCall, sourceCatalog: EditorialSourceCatalogItem[]) {
   const args = JSON.parse(toolCall.function.arguments || "{}") as Record<string, unknown>;
 
-  if (toolCall.function.name === "fetch_trusted_webpage") {
+  if (toolCall.function.name === "fetch_url") {
     return fetchTrustedWebpage(typeof args.url === "string" ? args.url : "");
   }
 
-  if (toolCall.function.name === "read_official_inter_article") {
-    return readOfficialInterArticle(typeof args.url === "string" ? args.url : "");
+  if (toolCall.function.name === "parse_inter_news_page") {
+    return parseInterNewsPage(typeof args.html === "string" ? args.html : "", sourceCatalog);
   }
 
-  if (toolCall.function.name === "read_selected_source_content") {
-    return readSelectedSourceContent(Array.isArray(args.sourceIds) ? args.sourceIds.filter((item): item is string => typeof item === "string") : [], sourceCatalog);
+  if (toolCall.function.name === "extract_article_text") {
+    return extractArticleText(typeof args.url === "string" ? args.url : "");
   }
 
   return {
@@ -440,7 +611,9 @@ async function finalizeJson<T>(messages: ChatMessage[], schema: z.ZodSchema<T>, 
 }
 
 function buildHomeMessages(input: HomeEditorialInput): ChatMessage[] {
+  const listingUrl = `${env.interOfficialBaseUrl}/news`;
   const deterministicContext = {
+    listingUrl,
     nextFixture: input.nextFixture
       ? {
           id: input.nextFixture.id,
@@ -505,17 +678,19 @@ function buildHomeMessages(input: HomeEditorialInput): ChatMessage[] {
     {
       role: "system",
       content:
-        "You are the Inter Daily editorial engine. Never use your own knowledge as a fact source. Only use the deterministic sports facts provided by the user and evidence returned by tools. Never fabricate club updates, player updates, injuries, transfers, or storylines. If evidence is weak or absent, return empty arrays or null. All final text must be concise Simplified Chinese."
+        "You are the Inter Daily editorial engine. Never use your own knowledge as a fact source. Only use the deterministic sports facts provided by the user and evidence returned by tools. Never fabricate club updates, player updates, injuries, transfers, or storylines. If evidence is weak or absent, return empty arrays or null. Use the tool flow fetch_url -> parse_inter_news_page -> extract_article_text whenever official news evidence is needed. All final text must be concise Simplified Chinese."
     },
     {
       role: "user",
-      content: `Generate home editorial modules for Inter Daily.\nRules:\n- sports facts in the context are deterministic and may be referenced directly\n- for news, club/player updates, transfer watch, and storylines, inspect source catalog items with tools before deciding\n- inspect at most 3 source items unless the evidence is still insufficient\n- if an item has no supporting evidence from provided context or tools, leave it out\n- preMatchStoryline must be null when there is no upcoming or live fixture\n- use only source ids from sourceCatalog for topNewsSummaries\n\nContext JSON:\n${JSON.stringify(deterministicContext, null, 2)}`
+      content: `Generate home editorial modules for Inter Daily.\nRules:\n- sports facts in the context are deterministic and may be referenced directly\n- when you need official news evidence, first call fetch_url with listingUrl, then parse_inter_news_page, then extract_article_text for selected article URLs\n- inspect at most 3 articles unless the evidence is still insufficient\n- if an item has no supporting evidence from provided context or tools, leave it out\n- preMatchStoryline must be null when there is no upcoming or live fixture\n- use only source ids from sourceCatalog for topNewsSummaries; parse_inter_news_page may return matchedSourceId to help you map articles\n\nContext JSON:\n${JSON.stringify(deterministicContext, null, 2)}`
     }
   ];
 }
 
 function buildFixtureMessages(input: FixtureEditorialInput): ChatMessage[] {
+  const listingUrl = `${env.interOfficialBaseUrl}/news`;
   const deterministicContext = {
+    listingUrl,
     fixture: {
       id: input.fixture.id,
       round: input.fixture.round,
@@ -547,11 +722,11 @@ function buildFixtureMessages(input: FixtureEditorialInput): ChatMessage[] {
     {
       role: "system",
       content:
-        "You are the Inter Daily match editorial engine. Never invent match facts, tactical details, injuries, or player updates. Use only the deterministic fixture context and evidence returned by tools. If evidence is weak, return null summary and an empty storyline list."
+        "You are the Inter Daily match editorial engine. Never invent match facts, tactical details, injuries, or player updates. Use only the deterministic fixture context and evidence returned by tools. Use the tool flow fetch_url -> parse_inter_news_page -> extract_article_text whenever official news evidence is needed. If evidence is weak, return null summary and an empty storyline list."
     },
     {
       role: "user",
-      content: `Create a pre-match storyline package for the selected fixture.\nRules:\n- inspect official sources with tools before deciding\n- inspect at most 3 source items unless the evidence is still insufficient\n- do not describe unverified lineups or injuries\n- if there is not enough evidence, return null summary and [] storylines\n- final text must be concise Simplified Chinese\n\nContext JSON:\n${JSON.stringify(deterministicContext, null, 2)}`
+      content: `Create a pre-match storyline package for the selected fixture.\nRules:\n- when you need official news evidence, first call fetch_url with listingUrl, then parse_inter_news_page, then extract_article_text for selected article URLs\n- inspect at most 3 articles unless the evidence is still insufficient\n- do not describe unverified lineups or injuries\n- if there is not enough evidence, return null summary and [] storylines\n- final text must be concise Simplified Chinese\n\nContext JSON:\n${JSON.stringify(deterministicContext, null, 2)}`
     }
   ];
 }
