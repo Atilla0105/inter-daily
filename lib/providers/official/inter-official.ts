@@ -3,6 +3,7 @@ import { load } from "cheerio";
 import env from "@/lib/config/env";
 import { memorySeed, newsDetailsSeed, squadSeed, topNewsSeed } from "@/lib/data/mock";
 import type { MemoryEntry, NewsDetail, NewsItem, SquadPlayer } from "@/lib/types";
+import { slugFromUrl } from "@/lib/utils/slug";
 
 import type { OfficialNewsProvider } from "./base";
 
@@ -45,7 +46,7 @@ export class InterOfficialProvider implements OfficialNewsProvider {
           }
 
           return {
-            id: `official-${index}`,
+            id: slugFromUrl(href.startsWith("http") ? href : `${env.interOfficialBaseUrl}${href}`),
             title,
             excerpt:
               node.find("p, [class*='subtitle'], [class*='description']").first().text().trim() ||

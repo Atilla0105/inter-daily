@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { BellRing, Download, MoonStar, Palette, Smartphone } from "lucide-react";
 import { useState } from "react";
 
-import env from "@/lib/config/env";
+import publicEnv from "@/lib/config/public-env";
 import { fetchApi } from "@/lib/services/api";
 import { apiEnvelopeSchema, homePayloadSchema } from "@/lib/schemas";
 
@@ -42,7 +42,7 @@ export function MyScreen() {
       return;
     }
 
-    if (!env.vapidPublicKey) {
+    if (!publicEnv.vapidPublicKey) {
       setSubscriptionState("缺少 VAPID 公钥");
       return;
     }
@@ -56,7 +56,7 @@ export function MyScreen() {
     const registration = await navigator.serviceWorker.ready;
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(env.vapidPublicKey)
+      applicationServerKey: urlBase64ToUint8Array(publicEnv.vapidPublicKey)
     });
 
     await fetch("/api/push/subscribe", {

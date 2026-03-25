@@ -3,7 +3,6 @@ import { PrismaClient } from "@prisma/client";
 import env from "@/lib/config/env";
 
 declare global {
-  // eslint-disable-next-line no-var
   var __interDailyPrisma: PrismaClient | undefined;
 }
 

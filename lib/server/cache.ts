@@ -17,7 +17,6 @@ type CacheResult<T> = {
 const memoryCache = new Map<string, CacheRecord>();
 
 declare global {
-  // eslint-disable-next-line no-var
   var __interDailyRedisClient: RedisClientType | undefined;
 }
 

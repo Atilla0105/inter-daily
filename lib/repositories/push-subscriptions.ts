@@ -60,3 +60,30 @@ export async function savePushSubscription(input: {
     storage: "prisma" as const
   };
 }
+
+export async function listPushSubscriptions() {
+  if (!prisma) {
+    return Array.from(fallbackSubscriptions.values());
+  }
+
+  const rows = await prisma.pushSubscription.findMany();
+  return rows.map((row) => ({
+    deviceId: row.deviceId,
+    subscription: {
+      endpoint: row.endpoint,
+      keys: {
+        p256dh: row.p256dh,
+        auth: row.auth
+      }
+    },
+    preferences: {
+      enabled: row.notificationsEnabled,
+      matchReminders: row.matchReminders,
+      liveEvents: row.liveEvents,
+      officialNews: row.officialNews,
+      quietHoursEnabled: row.quietHoursEnabled,
+      quietHoursStart: row.quietHoursStart ?? "23:00",
+      quietHoursEnd: row.quietHoursEnd ?? "08:00"
+    }
+  }));
+}

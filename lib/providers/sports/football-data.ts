@@ -69,9 +69,10 @@ function toCompetition(code?: string | null): FixtureCard["competition"] {
   return "serie-a";
 }
 
-function buildCard(match: FootballDataMatch, timeZone = "UTC"): FixtureCard {
+function buildCard(match: FootballDataMatch, timeZone = "UTC", focusTeamId?: string): FixtureCard {
   const competition = toCompetition(match.competition?.code);
   const status = toInternalStatus(match.status);
+  const interId = focusTeamId ?? env.sportsTeamId;
 
   return {
     id: String(match.id),
@@ -83,7 +84,7 @@ function buildCard(match: FootballDataMatch, timeZone = "UTC"): FixtureCard {
     kickoffAtUtc: match.utcDate,
     kickoffDisplay: formatKickoff(match.utcDate, timeZone),
     localTimeLabel: formatTimeZoneLabel(match.utcDate, timeZone),
-    isHome: rawFixtures[0]?.awayTeam.id !== String(match.homeTeam.id),
+    isHome: interId ? String(match.homeTeam.id) === String(interId) : rawFixtures[0]?.awayTeam.id !== String(match.homeTeam.id),
     status,
     statusLabel: statusLabel(status),
     statusTone: statusTone(status),
@@ -135,41 +136,30 @@ export class FootballDataProvider implements SportsDataProvider {
     );
 
     if (!data) {
-      return rawFixtures.map((fixture) => buildCard({
-        id: Number.NaN,
-        utcDate: fixture.kickoffAtUtc,
-        status:
-          fixture.status === "LIVE"
-            ? "IN_PLAY"
-            : fixture.status === "FINISHED"
-              ? "FINISHED"
-              : "TIMED",
-        stage: fixture.stage,
-        matchday: Number.parseInt(fixture.round.replace(/\D/g, ""), 10) || null,
-        competition: { name: competitionLabel(fixture.competition) },
+      return rawFixtures.map((fixture) => ({
+        id: fixture.id,
+        competition: fixture.competition,
+        competitionLabel: competitionLabel(fixture.competition),
+        round: fixture.round,
         venue: fixture.venue,
-        homeTeam: {
-          id: 1,
-          name: fixture.homeTeam.name,
-          shortName: fixture.homeTeam.shortName,
-          crest: fixture.homeTeam.crestUrl ?? null
-        },
-        awayTeam: {
-          id: 2,
-          name: fixture.awayTeam.name,
-          shortName: fixture.awayTeam.shortName,
-          crest: fixture.awayTeam.crestUrl ?? null
-        },
-        score: {
-          fullTime: {
-            home: fixture.homeTeam.score ?? null,
-            away: fixture.awayTeam.score ?? null
-          }
-        }
+        stage: fixture.stage,
+        kickoffAtUtc: fixture.kickoffAtUtc,
+        kickoffDisplay: formatKickoff(fixture.kickoffAtUtc, "UTC"),
+        localTimeLabel: formatTimeZoneLabel(fixture.kickoffAtUtc, "UTC"),
+        isHome: fixture.isHome,
+        status: fixture.status,
+        statusLabel: statusLabel(fixture.status),
+        statusTone: statusTone(fixture.status),
+        homeTeam: fixture.homeTeam,
+        awayTeam: fixture.awayTeam,
+        countdownLabel:
+          fixture.status === "SCHEDULED" ? countdownLabel(fixture.kickoffAtUtc) : fixture.status === "LIVE" ? "实时同步中" : null,
+        keyStory: fixture.keyStory ?? null,
+        hasReminder: fixture.hasReminder ?? false
       }));
     }
 
-    return data.matches.map((match) => buildCard(match));
+    return data.matches.map((match) => buildCard(match, "UTC", teamExternalId));
   }
 
   async getFixtureDetail(fixtureExternalId: string): Promise<FixtureDetail | null> {
@@ -179,7 +169,7 @@ export class FootballDataProvider implements SportsDataProvider {
       return detailSeeds[fixtureExternalId] ?? null;
     }
 
-    const fixture = buildCard(data.match);
+    const fixture = buildCard(data.match, "UTC", env.sportsTeamId);
 
     return {
       fixture,

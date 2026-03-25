@@ -88,6 +88,7 @@ model Player {
 
 model NewsArticle {
   id            String   @id @default(cuid())
+  slug          String   @unique
   sourceName    String
   sourceType    String
   sourceUrl     String
