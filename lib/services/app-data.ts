@@ -48,6 +48,39 @@ type NotificationTask = {
   type: "match" | "news";
 };
 
+const homeEditorialTimeoutMs = 8000;
+const fixtureEditorialTimeoutMs = 8000;
+
+type TimedResult<T> = {
+  data: T;
+  stale: boolean;
+  syncedAt: string;
+};
+
+function createTimedFallback<T>(data: T): TimedResult<T> {
+  return {
+    data,
+    stale: true,
+    syncedAt: new Date().toISOString()
+  };
+}
+
+function withTimedFallback<T>(run: () => Promise<TimedResult<T>>, timeoutMs: number, fallback: TimedResult<T>): Promise<TimedResult<T>> {
+  return new Promise((resolve) => {
+    const timeoutId = setTimeout(() => resolve(fallback), timeoutMs);
+
+    run()
+      .then((result) => {
+        clearTimeout(timeoutId);
+        resolve(result);
+      })
+      .catch(() => {
+        clearTimeout(timeoutId);
+        resolve(fallback);
+      });
+  });
+}
+
 function buildSeedFixtureCard(seed: (typeof rawFixtures)[number], timeZone: string): FixtureCard {
   return {
     id: seed.id,
@@ -315,20 +348,28 @@ export async function getHomePayload(timeZone: string): Promise<ApiEnvelope<Home
     const lastFinished = [...fixtures].reverse().find((fixture) => fixture.status === "FINISHED");
     const nextFixture = liveFixture ?? nextScheduled ?? fixtures[0] ?? null;
     const sourceCatalog = buildEditorialSourceCatalog(news);
-    const editorialResult = await getCachedOrLoad(
-      `editorial:home:${nextFixture?.id ?? "none"}:${sourceCatalog.map((item) => item.id).join(",")}`,
-      7200,
-      async () =>
-        deepseekEditorialProvider.generateHomeEditorial({
-          nextFixture,
-          lastFixture: lastFinished ?? null,
-          standings,
-          recentChanges,
-          topNews: news,
-          squad,
-          sourceCatalog
-        })
-    );
+    const editorialResult =
+      sourceCatalog.length > 0
+        ? await withTimedFallback(
+            () =>
+              getCachedOrLoad(
+                `editorial:home:${nextFixture?.id ?? "none"}:${sourceCatalog.map((item) => item.id).join(",")}`,
+                7200,
+                async () =>
+                  deepseekEditorialProvider.generateHomeEditorial({
+                    nextFixture,
+                    lastFixture: lastFinished ?? null,
+                    standings,
+                    recentChanges,
+                    topNews: news,
+                    squad,
+                    sourceCatalog
+                  })
+              ),
+            homeEditorialTimeoutMs,
+            createTimedFallback(EMPTY_HOME_EDITORIAL)
+          )
+        : createTimedFallback(EMPTY_HOME_EDITORIAL);
 
     const editorial = editorialResult.data;
     const topNews = applyEditorialSummaries(news.slice(0, 3), editorial.topNewsSummaries);
@@ -459,17 +500,33 @@ export async function getFixtureDetailData(id: string, timeZone: string): Promis
 
       const news = await loadNews();
       const sourceCatalog = buildEditorialSourceCatalog(news);
-      const editorialResult = await getCachedOrLoad(
-        `editorial:fixture:${id}:${sourceCatalog.map((item) => item.id).join(",")}`,
-        7200,
-        async () =>
-          deepseekEditorialProvider.generateFixtureStoryline({
-            fixture: baseDetail.fixture,
-            standings: await loadStandings(),
-            recentChanges: await listRecentChanges(),
-            sourceCatalog
-          })
-      );
+      const editorialResult =
+        sourceCatalog.length > 0
+          ? await withTimedFallback(
+              () =>
+                getCachedOrLoad(
+                  `editorial:fixture:${id}:${sourceCatalog.map((item) => item.id).join(",")}`,
+                  7200,
+                  async () =>
+                    deepseekEditorialProvider.generateFixtureStoryline({
+                      fixture: baseDetail.fixture,
+                      standings: await loadStandings(),
+                      recentChanges: await listRecentChanges(),
+                      sourceCatalog
+                    })
+                ),
+              fixtureEditorialTimeoutMs,
+              createTimedFallback({
+                summary: null,
+                storylines: [],
+                sourceUrls: []
+              })
+            )
+          : createTimedFallback({
+              summary: null,
+              storylines: [],
+              sourceUrls: []
+            });
 
       return editorialResult.data.summary || editorialResult.data.storylines.length > 0
         ? {
@@ -494,17 +551,33 @@ export async function getFixtureDetailData(id: string, timeZone: string): Promis
 
       const news = await loadNews();
       const sourceCatalog = buildEditorialSourceCatalog(news);
-      const editorialResult = await getCachedOrLoad(
-        `editorial:fixture:${id}:${sourceCatalog.map((item) => item.id).join(",")}`,
-        7200,
-        async () =>
-          deepseekEditorialProvider.generateFixtureStoryline({
-            fixture: hydrated.fixture,
-            standings: await loadStandings(),
-            recentChanges: await listRecentChanges(),
-            sourceCatalog
-          })
-      );
+      const editorialResult =
+        sourceCatalog.length > 0
+          ? await withTimedFallback(
+              () =>
+                getCachedOrLoad(
+                  `editorial:fixture:${id}:${sourceCatalog.map((item) => item.id).join(",")}`,
+                  7200,
+                  async () =>
+                    deepseekEditorialProvider.generateFixtureStoryline({
+                      fixture: hydrated.fixture,
+                      standings: await loadStandings(),
+                      recentChanges: await listRecentChanges(),
+                      sourceCatalog
+                    })
+                ),
+              fixtureEditorialTimeoutMs,
+              createTimedFallback({
+                summary: null,
+                storylines: [],
+                sourceUrls: []
+              })
+            )
+          : createTimedFallback({
+              summary: null,
+              storylines: [],
+              sourceUrls: []
+            });
 
       return editorialResult.data.summary || editorialResult.data.storylines.length > 0
         ? {
