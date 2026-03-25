@@ -3,6 +3,7 @@ import { changesSeed, detailSeeds, homeSeed, memorySeed, newsDetailsSeed, rawFix
 import { interOfficialProvider } from "@/lib/providers/official/inter-official";
 import { footballDataProvider } from "@/lib/providers/sports/football-data";
 import { deepseekEditorialProvider } from "@/lib/providers/summary/deepseek-editorial";
+import { getDailyBriefingData } from "@/lib/services/briefing";
 import {
   getLatestStandings,
   getStoredFixture,
@@ -32,7 +33,6 @@ import type {
   SquadPlayer,
   StandingSummary
 } from "@/lib/types";
-import { EMPTY_HOME_EDITORIAL } from "@/lib/types";
 import { competitionLabel, countdownLabel, formatKickoff, formatTimeZoneLabel, statusLabel, statusTone } from "@/lib/utils/time";
 
 type FixturesQuery = {
@@ -48,7 +48,6 @@ type NotificationTask = {
   type: "match" | "news";
 };
 
-const homeEditorialTimeoutMs = 8000;
 const fixtureEditorialTimeoutMs = 8000;
 
 type TimedResult<T> = {
@@ -361,35 +360,11 @@ export async function getHomePayload(timeZone: string): Promise<ApiEnvelope<Home
     const news = await loadNews();
     const memoryCard = await loadMemoryCard();
     const recentChanges = await listRecentChanges();
-    const squad = await loadSquad();
-
     const liveFixture = fixtures.find((fixture) => fixture.status === "LIVE");
     const nextScheduled = fixtures.find((fixture) => fixture.status === "SCHEDULED");
     const lastFinished = [...fixtures].reverse().find((fixture) => fixture.status === "FINISHED");
     const nextFixture = liveFixture ?? nextScheduled ?? fixtures[0] ?? null;
-    const sourceCatalog = buildEditorialSourceCatalog(news);
-    const editorialResult =
-      sourceCatalog.length > 0
-        ? await withTimedFallback(
-            () =>
-              getCachedOrLoad(
-                `editorial:home:${nextFixture?.id ?? "none"}:${sourceCatalog.map((item) => item.id).join(",")}`,
-                7200,
-                async () =>
-                  deepseekEditorialProvider.generateHomeEditorial({
-                    nextFixture,
-                    lastFixture: lastFinished ?? null,
-                    standings,
-                    recentChanges,
-                    topNews: news,
-                    squad,
-                    sourceCatalog
-                  })
-              ),
-            homeEditorialTimeoutMs,
-            createTimedFallback(EMPTY_HOME_EDITORIAL)
-          )
-        : createTimedFallback(EMPTY_HOME_EDITORIAL);
+    const editorialResult = await getDailyBriefingData();
 
     const editorial = editorialResult.data;
     const topNews = applyEditorialSummaries(news.slice(0, 3), editorial.topNews);
@@ -439,15 +414,8 @@ export async function getHomePayload(timeZone: string): Promise<ApiEnvelope<Home
   };
 }
 
-export async function getHomeEditorialData(timeZone: string): Promise<ApiEnvelope<HomePayload["editorial"]>> {
-  const payload = await getHomePayload(timeZone);
-
-  return {
-    data: payload.data.editorial,
-    stale: payload.stale,
-    syncedAt: payload.syncedAt,
-    offlineReady: payload.offlineReady
-  };
+export async function getHomeEditorialData(_timeZone: string): Promise<ApiEnvelope<HomePayload["editorial"]>> {
+  return getDailyBriefingData();
 }
 
 export async function getFixturesData(query: FixturesQuery): Promise<ApiEnvelope<FixtureCard[]>> {

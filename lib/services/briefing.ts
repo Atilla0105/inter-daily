@@ -5,7 +5,7 @@ import { deepseek } from "@/lib/deepseek";
 import { interOfficialProvider } from "@/lib/providers/official/inter-official";
 import { homeEditorialSchema } from "@/lib/schemas";
 import { getCachedOrLoad } from "@/lib/server/cache";
-import { EMPTY_HOME_EDITORIAL, type HomeEditorial } from "@/lib/types";
+import { EMPTY_HOME_EDITORIAL, type ApiEnvelope, type HomeEditorial } from "@/lib/types";
 
 const briefingCacheTtlSeconds = 7200;
 const maxListingItems = 6;
@@ -103,10 +103,11 @@ export async function buildSourceBundle() {
 }
 
 export async function generateDailyBriefing(): Promise<HomeEditorial> {
-  if (!env.deepseekApiKey) {
-    return createBriefingFallback();
-  }
+  const result = await getDailyBriefingData();
+  return result.data;
+}
 
+export async function getDailyBriefingData(): Promise<ApiEnvelope<HomeEditorial>> {
   const result = await withTimeout(
     () =>
       getCachedOrLoad("briefing:daily", briefingCacheTtlSeconds, async () => {
@@ -205,6 +206,10 @@ ${JSON.stringify(sourceBundle)}`
     }
   );
 
-  return result.data;
+  return {
+    data: result.data,
+    stale: result.stale,
+    syncedAt: result.syncedAt,
+    offlineReady: true
+  };
 }
-
