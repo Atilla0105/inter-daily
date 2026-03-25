@@ -2,6 +2,7 @@ import env from "@/lib/config/env";
 import { changesSeed, detailSeeds, homeSeed, memorySeed, newsDetailsSeed, rawFixtures, squadSeed, standingsSeed, topNewsSeed } from "@/lib/data/mock";
 import { interOfficialProvider } from "@/lib/providers/official/inter-official";
 import { footballDataProvider } from "@/lib/providers/sports/football-data";
+import { deepseekEditorialProvider } from "@/lib/providers/summary/deepseek-editorial";
 import {
   getLatestStandings,
   getStoredFixture,
@@ -31,6 +32,7 @@ import type {
   SquadPlayer,
   StandingSummary
 } from "@/lib/types";
+import { EMPTY_HOME_EDITORIAL } from "@/lib/types";
 import { competitionLabel, countdownLabel, formatKickoff, formatTimeZoneLabel, statusLabel, statusTone } from "@/lib/utils/time";
 
 type FixturesQuery = {
@@ -225,6 +227,62 @@ function buildRecentChangesFallback() {
   return changesSeed;
 }
 
+function isTrustedEditorialSource(item: NewsItem) {
+  if (item.sourceType !== "official") {
+    return false;
+  }
+
+  try {
+    const hostname = new URL(item.canonicalUrl).hostname;
+    return hostname === "www.inter.it" || hostname === "inter.it";
+  } catch {
+    return false;
+  }
+}
+
+function buildEditorialSourceCatalog(items: NewsItem[]) {
+  return items
+    .filter(isTrustedEditorialSource)
+    .slice(0, 8)
+    .map((item) => ({
+      id: item.id,
+      title: item.title,
+      canonicalUrl: item.canonicalUrl,
+      publishedAt: item.publishedAt,
+      sourceName: item.sourceName,
+      category: item.category
+    }));
+}
+
+function mapEditorialBriefsToAlerts(
+  items: Array<{
+    title: string;
+    detail: string;
+    severity: "low" | "medium" | "high";
+    type?: ChangeAlert["type"] | "club" | "player";
+  }>,
+  fallbackType: ChangeAlert["type"]
+): ChangeAlert[] {
+  return items.map((item, index) => ({
+    id: `editorial-${fallbackType}-${index + 1}`,
+    type:
+      item.type === "club" || item.type === "player" || item.type === undefined ? fallbackType : (item.type as ChangeAlert["type"]),
+    title: item.title,
+    detail: item.detail,
+    occurredAt: new Date().toISOString(),
+    severity: item.severity
+  }));
+}
+
+function applyEditorialSummaries(news: NewsItem[], summaries: HomePayload["editorial"]["topNewsSummaries"]) {
+  const summaryMap = new Map(summaries.map((item) => [item.newsId, item.summary]));
+
+  return news.map((item) => ({
+    ...item,
+    excerpt: summaryMap.get(item.id) ?? item.excerpt
+  }));
+}
+
 function fixtureChangeToAlert(input: {
   fixture: FixtureCard;
   changeType: "fixture-time" | "result";
@@ -250,24 +308,61 @@ export async function getHomePayload(timeZone: string): Promise<ApiEnvelope<Home
     const news = await loadNews();
     const memoryCard = await loadMemoryCard();
     const recentChanges = await listRecentChanges();
+    const squad = await loadSquad();
 
     const liveFixture = fixtures.find((fixture) => fixture.status === "LIVE");
     const nextScheduled = fixtures.find((fixture) => fixture.status === "SCHEDULED");
     const lastFinished = [...fixtures].reverse().find((fixture) => fixture.status === "FINISHED");
+    const nextFixture = liveFixture ?? nextScheduled ?? fixtures[0] ?? null;
+    const sourceCatalog = buildEditorialSourceCatalog(news);
+    const editorialResult = await getCachedOrLoad(
+      `editorial:home:${nextFixture?.id ?? "none"}:${sourceCatalog.map((item) => item.id).join(",")}`,
+      7200,
+      async () =>
+        deepseekEditorialProvider.generateHomeEditorial({
+          nextFixture,
+          lastFixture: lastFinished ?? null,
+          standings,
+          recentChanges,
+          topNews: news,
+          squad,
+          sourceCatalog
+        })
+    );
+
+    const editorial = editorialResult.data;
+    const topNews = applyEditorialSummaries(news.slice(0, 3), editorial.topNewsSummaries);
+    const changes =
+      editorial.dailyChangeDigest.length > 0
+        ? mapEditorialBriefsToAlerts(editorial.dailyChangeDigest, "news")
+        : recentChanges.length > 0
+          ? recentChanges
+          : buildRecentChangesFallback();
+    const injuriesAndTransfers =
+      editorial.injuryTransferWatch.length > 0
+        ? mapEditorialBriefsToAlerts(editorial.injuryTransferWatch, "transfer")
+        : recentChanges
+            .filter((item) => item.type === "transfer" || item.type === "injury" || item.type === "suspension")
+            .slice(0, 3)
+            .concat(homeSeed.injuriesAndTransfers)
+            .slice(0, 3);
 
     return {
       ...homeSeed,
-      nextFixture: liveFixture ?? nextScheduled ?? fixtures[0] ?? null,
+      nextFixture:
+        nextFixture && editorial.preMatchStoryline?.summary
+          ? {
+              ...nextFixture,
+              keyStory: editorial.preMatchStoryline.summary
+            }
+          : nextFixture,
       lastFixture: lastFinished ?? null,
       standingsSummary: standings,
-      topNews: news.slice(0, 3),
-      changes: recentChanges.length > 0 ? recentChanges : buildRecentChangesFallback(),
+      topNews,
+      changes,
       memoryCard,
-      injuriesAndTransfers:
-        recentChanges.filter((item) => item.type === "transfer" || item.type === "injury" || item.type === "suspension")
-          .slice(0, 3)
-          .concat(homeSeed.injuriesAndTransfers)
-          .slice(0, 3)
+      injuriesAndTransfers,
+      editorial
     };
   });
 
@@ -280,6 +375,17 @@ export async function getHomePayload(timeZone: string): Promise<ApiEnvelope<Home
     stale: result.stale,
     syncedAt: result.syncedAt,
     offlineReady: true
+  };
+}
+
+export async function getHomeEditorialData(timeZone: string): Promise<ApiEnvelope<HomePayload["editorial"]>> {
+  const payload = await getHomePayload(timeZone);
+
+  return {
+    data: payload.data.editorial,
+    stale: payload.stale,
+    syncedAt: payload.syncedAt,
+    offlineReady: payload.offlineReady
   };
 }
 
@@ -333,7 +439,8 @@ function buildBaseDetail(fixture: FixtureCard, stale = false): FixtureDetail {
       fanReaction: true
     },
     syncedAt: new Date().toISOString(),
-    stale
+    stale,
+    editorialSources: []
   };
 }
 
@@ -345,12 +452,68 @@ export async function getFixtureDetailData(id: string, timeZone: string): Promis
 
     const stored = await getStoredFixture(id, timeZone);
     if (stored) {
-      return buildBaseDetail(withTimeZone(stored, timeZone));
+      const baseDetail = buildBaseDetail(withTimeZone(stored, timeZone));
+      if (baseDetail.fixture.status === "FINISHED" || baseDetail.fixture.status === "CANCELLED") {
+        return baseDetail;
+      }
+
+      const news = await loadNews();
+      const sourceCatalog = buildEditorialSourceCatalog(news);
+      const editorialResult = await getCachedOrLoad(
+        `editorial:fixture:${id}:${sourceCatalog.map((item) => item.id).join(",")}`,
+        7200,
+        async () =>
+          deepseekEditorialProvider.generateFixtureStoryline({
+            fixture: baseDetail.fixture,
+            standings: await loadStandings(),
+            recentChanges: await listRecentChanges(),
+            sourceCatalog
+          })
+      );
+
+      return editorialResult.data.summary || editorialResult.data.storylines.length > 0
+        ? {
+            ...baseDetail,
+            summary: editorialResult.data.summary ?? baseDetail.summary,
+            storylines: editorialResult.data.storylines.length > 0 ? editorialResult.data.storylines : baseDetail.storylines,
+            editorialSources: editorialResult.data.sourceUrls
+          }
+        : baseDetail;
     }
 
     try {
       const providerDetail = await footballDataProvider.getFixtureDetail(id);
-      return providerDetail ? hydrateFixtureDetail(providerDetail, timeZone) : null;
+      if (!providerDetail) {
+        return null;
+      }
+
+      const hydrated = hydrateFixtureDetail(providerDetail, timeZone);
+      if (hydrated.fixture.status === "FINISHED" || hydrated.fixture.status === "CANCELLED") {
+        return hydrated;
+      }
+
+      const news = await loadNews();
+      const sourceCatalog = buildEditorialSourceCatalog(news);
+      const editorialResult = await getCachedOrLoad(
+        `editorial:fixture:${id}:${sourceCatalog.map((item) => item.id).join(",")}`,
+        7200,
+        async () =>
+          deepseekEditorialProvider.generateFixtureStoryline({
+            fixture: hydrated.fixture,
+            standings: await loadStandings(),
+            recentChanges: await listRecentChanges(),
+            sourceCatalog
+          })
+      );
+
+      return editorialResult.data.summary || editorialResult.data.storylines.length > 0
+        ? {
+            ...hydrated,
+            summary: editorialResult.data.summary ?? hydrated.summary,
+            storylines: editorialResult.data.storylines.length > 0 ? editorialResult.data.storylines : hydrated.storylines,
+            editorialSources: editorialResult.data.sourceUrls
+          }
+        : hydrated;
     } catch {
       return null;
     }

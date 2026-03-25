@@ -77,6 +77,38 @@ export const changeAlertSchema = z.object({
   severity: z.enum(["low", "medium", "high"])
 });
 
+export const editorialNewsSummarySchema = z.object({
+  newsId: z.string(),
+  summary: z.string(),
+  sourceUrls: z.array(z.string().url())
+});
+
+export const editorialBriefSchema = z.object({
+  title: z.string(),
+  detail: z.string(),
+  sourceUrls: z.array(z.string().url()),
+  sourceTitles: z.array(z.string()),
+  severity: z.enum(["low", "medium", "high"]),
+  type: z
+    .enum(["fixture-time", "injury", "suspension", "ranking", "lineup", "result", "news", "transfer", "club", "player"])
+    .optional()
+});
+
+export const editorialStorylineSchema = z.object({
+  summary: z.string().nullable(),
+  bullets: z.array(z.string()),
+  sourceUrls: z.array(z.string().url())
+});
+
+export const homeEditorialSchema = z.object({
+  topNewsSummaries: z.array(editorialNewsSummarySchema),
+  clubUpdates: z.array(editorialBriefSchema),
+  playerUpdates: z.array(editorialBriefSchema),
+  injuryTransferWatch: z.array(editorialBriefSchema),
+  dailyChangeDigest: z.array(editorialBriefSchema),
+  preMatchStoryline: editorialStorylineSchema.nullable()
+});
+
 export const standingSummarySchema = z.object({
   competition: competitionKeySchema,
   competitionLabel: z.string(),
@@ -128,6 +160,7 @@ export const homePayloadSchema = z.object({
   changes: z.array(changeAlertSchema),
   memoryCard: memoryEntrySchema.nullable(),
   injuriesAndTransfers: z.array(changeAlertSchema),
+  editorial: homeEditorialSchema,
   stale: z.boolean(),
   syncedAt: z.string()
 });
@@ -231,7 +264,8 @@ export const fixtureDetailSchema = z.object({
     .nullable(),
   capabilities: providerCapabilitySchema,
   syncedAt: z.string(),
-  stale: z.boolean()
+  stale: z.boolean(),
+  editorialSources: z.array(z.string().url()).optional()
 });
 
 export const squadPlayerSchema = z.object({

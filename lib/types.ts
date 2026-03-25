@@ -124,6 +124,7 @@ export type FixtureDetail = {
   capabilities: ProviderCapability;
   syncedAt: string;
   stale: boolean;
+  editorialSources?: string[];
 };
 
 export type StandingRow = {
@@ -189,6 +190,36 @@ export type ChangeAlert = {
   severity: "low" | "medium" | "high";
 };
 
+export type EditorialNewsSummary = {
+  newsId: string;
+  summary: string;
+  sourceUrls: string[];
+};
+
+export type EditorialBrief = {
+  title: string;
+  detail: string;
+  sourceUrls: string[];
+  sourceTitles: string[];
+  severity: "low" | "medium" | "high";
+  type?: ChangeAlert["type"] | "club" | "player";
+};
+
+export type EditorialStoryline = {
+  summary: string | null;
+  bullets: string[];
+  sourceUrls: string[];
+};
+
+export type HomeEditorial = {
+  topNewsSummaries: EditorialNewsSummary[];
+  clubUpdates: EditorialBrief[];
+  playerUpdates: EditorialBrief[];
+  injuryTransferWatch: EditorialBrief[];
+  dailyChangeDigest: EditorialBrief[];
+  preMatchStoryline: EditorialStoryline | null;
+};
+
 export type MemoryEntry = {
   id: string;
   title: string;
@@ -220,6 +251,7 @@ export type HomePayload = {
   changes: ChangeAlert[];
   memoryCard: MemoryEntry | null;
   injuriesAndTransfers: ChangeAlert[];
+  editorial: HomeEditorial;
   stale: boolean;
   syncedAt: string;
 };
@@ -304,6 +336,15 @@ export const DEFAULT_PROVIDER_CAPABILITIES: ProviderCapability = {
   liveEvents: false,
   playerRatings: true,
   fanReaction: true
+};
+
+export const EMPTY_HOME_EDITORIAL: HomeEditorial = {
+  topNewsSummaries: [],
+  clubUpdates: [],
+  playerUpdates: [],
+  injuryTransferWatch: [],
+  dailyChangeDigest: [],
+  preMatchStoryline: null
 };
 
 export const DEFAULT_PREFERENCES: UserPreferences = {

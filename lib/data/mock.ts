@@ -12,7 +12,7 @@ import type {
   StandingSummary
 } from "@/lib/types";
 
-import { DEFAULT_PROVIDER_CAPABILITIES } from "@/lib/types";
+import { DEFAULT_PROVIDER_CAPABILITIES, EMPTY_HOME_EDITORIAL } from "@/lib/types";
 
 export type RawFixtureSeed = {
   id: string;
@@ -595,6 +595,7 @@ export const homeSeed: HomePayload = {
   injuriesAndTransfers: changesSeed.filter((item) =>
     ["injury", "suspension", "transfer"].includes(item.type)
   ),
+  editorial: EMPTY_HOME_EDITORIAL,
   stale: false,
   syncedAt: "2026-03-25T09:40:00.000Z"
 };

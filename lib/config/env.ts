@@ -15,9 +15,9 @@ const env = {
   socialSyncHours: Number(process.env.SOCIAL_SYNC_HOURS ?? "6"),
   socialClubAccount: process.env.SOCIAL_CLUB_ACCOUNT ?? "inter",
   socialPlayerAccounts: process.env.SOCIAL_PLAYER_ACCOUNTS ?? "lautaromartinez,nicolo_barella,alebastoni95,thuram",
-  openAiApiKey: process.env.OPENAI_API_KEY ?? "",
-  openAiModel: process.env.OPENAI_MODEL ?? "gpt-5-mini",
-  aiSummaryEnabled: process.env.AI_SUMMARY_ENABLED === "true",
+  deepseekApiKey: process.env.DEEPSEEK_API_KEY ?? "",
+  deepseekModel: process.env.DEEPSEEK_MODEL ?? "deepseek-chat",
+  deepseekBaseUrl: process.env.DEEPSEEK_BASE_URL ?? "https://api.deepseek.com",
   vapidPublicKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "",
   vapidSubject: process.env.VAPID_SUBJECT ?? "mailto:inter@example.com",
   vapidPrivateKey: process.env.VAPID_PRIVATE_KEY ?? ""
