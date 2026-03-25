@@ -71,10 +71,15 @@ type InterNewsArticleProps = {
   relatedNews?: InterNewsEntry[] | null;
 };
 
+const officialFetchTimeoutMs = 8000;
+
 async function fetchHtml(url: string) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(new Error(`timeout_${officialFetchTimeoutMs}`)), officialFetchTimeoutMs);
   const response = await fetch(url, {
-    next: { revalidate: 900 }
-  });
+    next: { revalidate: 900 },
+    signal: controller.signal
+  }).finally(() => clearTimeout(timeoutId));
 
   if (!response.ok) {
     throw new Error(`Official source request failed: ${response.status}`);

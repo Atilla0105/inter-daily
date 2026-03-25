@@ -12,8 +12,11 @@ import type {
 import { EMPTY_HOME_EDITORIAL, type HomeEditorial } from "@/lib/types";
 
 const trustedHosts = new Set(["www.inter.it", "inter.it"]);
-const maxToolRounds = 4;
+const maxToolRounds = 2;
 const maxBodyChars = 6000;
+const trustedFetchTimeoutMs = 8000;
+const articleReadTimeoutMs = 9000;
+const deepseekRequestTimeoutMs = 12000;
 
 const fixtureStorylineSchema = z.object({
   summary: z.string().nullable(),
@@ -122,6 +125,32 @@ function serializeSourceCatalog(sourceCatalog: EditorialSourceCatalogItem[]) {
   }));
 }
 
+function createTimeoutSignal(timeoutMs: number) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(new Error(`timeout_${timeoutMs}`)), timeoutMs);
+
+  return {
+    signal: controller.signal,
+    clear: () => clearTimeout(timeoutId)
+  };
+}
+
+function withTimeout<T>(run: () => Promise<T>, timeoutMs: number, fallback: T): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timeoutId = setTimeout(() => resolve(fallback), timeoutMs);
+
+    run()
+      .then((result) => {
+        clearTimeout(timeoutId);
+        resolve(result);
+      })
+      .catch((error) => {
+        clearTimeout(timeoutId);
+        reject(error);
+      });
+  });
+}
+
 async function fetchTrustedWebpage(url: string) {
   if (!isTrustedUrl(url)) {
     return {
@@ -131,9 +160,11 @@ async function fetchTrustedWebpage(url: string) {
     };
   }
 
+  const timeout = createTimeoutSignal(trustedFetchTimeoutMs);
   const response = await fetch(url, {
-    next: { revalidate: 900 }
-  });
+    next: { revalidate: 900 },
+    signal: timeout.signal
+  }).finally(() => timeout.clear());
 
   if (!response.ok) {
     return {
@@ -174,7 +205,7 @@ async function readOfficialInterArticle(url: string) {
     };
   }
 
-  const article = await interOfficialProvider.getArticle(url);
+  const article = await withTimeout(() => interOfficialProvider.getArticle(url), articleReadTimeoutMs, null);
   if (!article) {
     return {
       ok: false,
@@ -197,7 +228,7 @@ async function readSelectedSourceContent(sourceIds: string[], sourceCatalog: Edi
   const targets = sourceCatalog.filter((item) => sourceIds.includes(item.id)).slice(0, 5);
   const articles = await Promise.all(
     targets.map(async (item) => {
-      const article = await interOfficialProvider.getArticle(item.canonicalUrl);
+      const article = await withTimeout(() => interOfficialProvider.getArticle(item.canonicalUrl), articleReadTimeoutMs, null);
       if (!article) {
         return null;
       }
@@ -238,6 +269,7 @@ async function requestDeepSeek(messages: ChatMessage[], options?: { useBeta?: bo
     };
   }
 
+  const timeout = createTimeoutSignal(deepseekRequestTimeoutMs);
   const response = await fetch(endpoint, {
     method: "POST",
     headers: {
@@ -245,8 +277,9 @@ async function requestDeepSeek(messages: ChatMessage[], options?: { useBeta?: bo
       Authorization: `Bearer ${env.deepseekApiKey}`
     },
     body: JSON.stringify(payload),
-    cache: "no-store"
-  });
+    cache: "no-store",
+    signal: timeout.signal
+  }).finally(() => timeout.clear());
 
   if (!response.ok) {
     throw new Error(`DeepSeek request failed: ${response.status}`);
@@ -349,7 +382,6 @@ async function runToolPhase(initialMessages: ChatMessage[], sourceCatalog: Edito
 
   for (let index = 0; index < maxToolRounds; index += 1) {
     const response = await requestDeepSeek(messages, {
-      useBeta: true,
       tools: buildToolDefinitions()
     });
 
@@ -477,7 +509,7 @@ function buildHomeMessages(input: HomeEditorialInput): ChatMessage[] {
     },
     {
       role: "user",
-      content: `Generate home editorial modules for Inter Daily.\nRules:\n- sports facts in the context are deterministic and may be referenced directly\n- for news, club/player updates, transfer watch, and storylines, inspect source catalog items with tools before deciding\n- if an item has no supporting evidence from provided context or tools, leave it out\n- preMatchStoryline must be null when there is no upcoming or live fixture\n- use only source ids from sourceCatalog for topNewsSummaries\n\nContext JSON:\n${JSON.stringify(deterministicContext, null, 2)}`
+      content: `Generate home editorial modules for Inter Daily.\nRules:\n- sports facts in the context are deterministic and may be referenced directly\n- for news, club/player updates, transfer watch, and storylines, inspect source catalog items with tools before deciding\n- inspect at most 3 source items unless the evidence is still insufficient\n- if an item has no supporting evidence from provided context or tools, leave it out\n- preMatchStoryline must be null when there is no upcoming or live fixture\n- use only source ids from sourceCatalog for topNewsSummaries\n\nContext JSON:\n${JSON.stringify(deterministicContext, null, 2)}`
     }
   ];
 }
@@ -519,7 +551,7 @@ function buildFixtureMessages(input: FixtureEditorialInput): ChatMessage[] {
     },
     {
       role: "user",
-      content: `Create a pre-match storyline package for the selected fixture.\nRules:\n- inspect official sources with tools before deciding\n- do not describe unverified lineups or injuries\n- if there is not enough evidence, return null summary and [] storylines\n- final text must be concise Simplified Chinese\n\nContext JSON:\n${JSON.stringify(deterministicContext, null, 2)}`
+      content: `Create a pre-match storyline package for the selected fixture.\nRules:\n- inspect official sources with tools before deciding\n- inspect at most 3 source items unless the evidence is still insufficient\n- do not describe unverified lineups or injuries\n- if there is not enough evidence, return null summary and [] storylines\n- final text must be concise Simplified Chinese\n\nContext JSON:\n${JSON.stringify(deterministicContext, null, 2)}`
     }
   ];
 }
