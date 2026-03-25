@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarDays, House, Newspaper, Radio, UserRound } from "lucide-react";
+import { CalendarDays, House, Newspaper, Shield, UserRound } from "lucide-react";
 
 import { cn } from "@/lib/utils/cn";
 
@@ -11,7 +11,7 @@ const tabs = [
     icon: CalendarDays,
     match: (pathname: string) => pathname.startsWith("/matches") || pathname.startsWith("/fixtures")
   },
-  { href: "/live", label: "Live", icon: Radio, match: (pathname: string) => pathname.startsWith("/live") },
+  { href: "/live", label: "球队", icon: Shield, match: (pathname: string) => pathname.startsWith("/live") },
   { href: "/news", label: "News", icon: Newspaper, match: (pathname: string) => pathname.startsWith("/news") },
   { href: "/my", label: "My", icon: UserRound, match: (pathname: string) => pathname.startsWith("/my") }
 ] as const;

@@ -596,7 +596,7 @@ export async function refreshSportsData() {
   const notifications: NotificationTask[] = allAlerts.slice(0, 2).map((alert) => ({
     title: "Inter Daily 比赛更新",
     body: alert.title,
-    url: alert.type === "ranking" ? "/matches" : "/live",
+    url: "/matches",
     type: "match"
   }));
 

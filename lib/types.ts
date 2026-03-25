@@ -22,6 +22,10 @@ export type ThemeMode = "classic" | "contrast";
 
 export type MotionMode = "full" | "reduced";
 
+export type SocialSourceType = "club" | "player";
+
+export type SocialPostType = "post" | "reel";
+
 export type ProviderCapability = {
   timeline: boolean;
   lineups: boolean;
@@ -237,6 +241,41 @@ export type UserPreferences = {
   ratingEntries: Record<string, number>;
   reactionPresets: string[];
   installTipDismissedAt: string | null;
+};
+
+export type CoachProfile = {
+  name: string;
+  role: string;
+  summary: string;
+  badge: string;
+};
+
+export type MirroredSocialAccount = {
+  sourceAccount: string;
+  displayName: string;
+  sourceType: SocialSourceType;
+  roleLabel: string;
+  summary: string;
+  lookupKeywords?: string[];
+};
+
+export type SocialFeedItem = {
+  id: string;
+  sourceAccount: string;
+  sourceLabel: string;
+  sourceType: SocialSourceType;
+  postType: SocialPostType;
+  caption: string;
+  publishedAt: string;
+  thumbnail: string | null;
+  mediaUrl?: string | null;
+  permalink?: string | null;
+  stale?: boolean;
+};
+
+export type SocialMirrorRecord = Omit<SocialFeedItem, "thumbnail" | "mediaUrl"> & {
+  remoteThumbnailUrl?: string | null;
+  remoteMediaUrl?: string | null;
 };
 
 export type PushSubscriptionRecord = {

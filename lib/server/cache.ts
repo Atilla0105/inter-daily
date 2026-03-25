@@ -67,6 +67,14 @@ async function writeRecord(key: string, record: CacheRecord) {
   memoryCache.set(key, record);
 }
 
+export async function primeCacheValue<T>(key: string, ttlSeconds: number, data: T, syncedAt = new Date().toISOString()) {
+  await writeRecord(key, {
+    payload: JSON.stringify(data),
+    expiresAt: Date.now() + ttlSeconds * 1000,
+    syncedAt
+  });
+}
+
 export async function getCachedOrLoad<T>(
   key: string,
   ttlSeconds: number,

@@ -246,6 +246,20 @@ export const squadPlayerSchema = z.object({
   status: z.enum(["可出场", "伤停", "停赛", "存疑"])
 });
 
+export const socialFeedItemSchema = z.object({
+  id: z.string(),
+  sourceAccount: z.string(),
+  sourceLabel: z.string(),
+  sourceType: z.enum(["club", "player"]),
+  postType: z.enum(["post", "reel"]),
+  caption: z.string(),
+  publishedAt: z.string(),
+  thumbnail: z.string().nullable(),
+  mediaUrl: z.string().nullable().optional(),
+  permalink: z.string().url().nullable().optional(),
+  stale: z.boolean().optional()
+});
+
 export const userPreferencesSchema = z.object({
   theme: z.enum(["classic", "contrast"]),
   motion: z.enum(["full", "reduced"]),

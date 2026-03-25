@@ -1,5 +1,5 @@
-import { LiveScreen } from "@/components/screens/live-screen";
+import { TeamScreen } from "@/components/screens/team-screen";
 
 export default function LivePage() {
-  return <LiveScreen />;
+  return <TeamScreen />;
 }

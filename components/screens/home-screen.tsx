@@ -109,7 +109,7 @@ export function HomeScreen() {
               </Link>
               <Link href="/live" className="rounded-xl bg-white/4 p-4">
                 <Shield className="mb-3 h-5 w-5 text-brand-primary" />
-                <p className="text-sm font-medium text-text-primary">Live</p>
+                <p className="text-sm font-medium text-text-primary">球队</p>
               </Link>
               <Link href="/memory" className="rounded-xl bg-white/4 p-4">
                 <BookOpenText className="mb-3 h-5 w-5 text-accent-gold" />
