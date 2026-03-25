@@ -18,7 +18,7 @@ export function PageHeader({
   return (
     <header className="flex items-start justify-between gap-4">
       <div>
-        <p className="mb-2 text-xs uppercase tracking-[0.24em] text-brand-primary">Inter Daily</p>
+        <p className="mb-2 text-xs tracking-[0.24em] text-brand-primary">国米日报</p>
         <h1 className="text-[28px] font-semibold tracking-tight text-text-primary">{title}</h1>
         <p className="mt-2 max-w-[18rem] text-sm leading-6 text-text-secondary">{subtitle}</p>
         <div className="mt-3 flex flex-wrap gap-2">

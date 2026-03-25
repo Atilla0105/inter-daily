@@ -22,6 +22,8 @@ export type ThemeMode = "classic" | "contrast";
 
 export type MotionMode = "full" | "reduced";
 
+export type AppLanguage = "zh" | "ug";
+
 export type SocialSourceType = "club" | "player";
 
 export type SocialPostType = "post" | "reel";
@@ -233,6 +235,7 @@ export type NotificationPreferences = {
 };
 
 export type UserPreferences = {
+  language: AppLanguage;
   theme: ThemeMode;
   motion: MotionMode;
   notifications: NotificationPreferences;
@@ -304,6 +307,7 @@ export const DEFAULT_PROVIDER_CAPABILITIES: ProviderCapability = {
 };
 
 export const DEFAULT_PREFERENCES: UserPreferences = {
+  language: "zh",
   theme: "classic",
   motion: "full",
   notifications: {

@@ -7,14 +7,14 @@ import { AppProviders } from "@/components/providers/app-providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Inter Daily",
+  title: "国米日报",
   description: "国际米兰球迷的移动端比赛日控制台。",
   manifest: "/manifest.webmanifest",
-  applicationName: "Inter Daily",
+  applicationName: "国米日报",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Inter Daily"
+    title: "国米日报"
   },
   icons: {
     icon: [
@@ -37,9 +37,13 @@ const themeBootScript = `
     const raw = window.localStorage.getItem('inter-daily/preferences/v1');
     if (!raw) document.documentElement.dataset.theme = 'classic';
     const parsed = raw ? JSON.parse(raw) : null;
+    document.documentElement.lang = parsed?.language === 'ug' ? 'ug-CN' : 'zh-CN';
+    document.documentElement.dataset.language = parsed?.language ?? 'zh';
     document.documentElement.dataset.theme = parsed?.theme ?? 'classic';
     document.documentElement.dataset.motion = parsed?.motion ?? 'full';
   } catch (error) {
+    document.documentElement.lang = 'zh-CN';
+    document.documentElement.dataset.language = 'zh';
     document.documentElement.dataset.theme = 'classic';
     document.documentElement.dataset.motion = 'full';
   }

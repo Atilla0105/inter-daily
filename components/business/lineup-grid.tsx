@@ -1,3 +1,7 @@
+"use client";
+
+import { useAppLanguage } from "@/hooks/use-app-language";
+
 import { Card } from "@/components/base/card";
 import type { TeamLineup } from "@/lib/types";
 
@@ -25,10 +29,12 @@ function TeamBlock({ title, lineup }: { title: string; lineup: TeamLineup }) {
 }
 
 export function LineupGrid({ home, away }: { home: TeamLineup; away: TeamLineup }) {
+  const { language } = useAppLanguage();
+
   return (
     <div className="grid gap-3">
-      <TeamBlock title="主队阵容" lineup={home} />
-      <TeamBlock title="客队阵容" lineup={away} />
+      <TeamBlock title={language === "ug" ? "ئۆي مەيدانى تىزىملىكى" : "主队阵容"} lineup={home} />
+      <TeamBlock title={language === "ug" ? "مېھمان تىزىملىكى" : "客队阵容"} lineup={away} />
     </div>
   );
 }

@@ -6,12 +6,14 @@ import { AppShell } from "@/components/base/app-shell";
 import { Card } from "@/components/base/card";
 import { ErrorPanel, LoadingCards, StalePanel } from "@/components/base/resource-panels";
 import { SectionTitle } from "@/components/base/section-title";
+import { useAppLanguage } from "@/hooks/use-app-language";
 import { apiEnvelopeSchema, squadPlayerSchema } from "@/lib/schemas";
 import { fetchApi } from "@/lib/services/api";
 
 const positionGroups = ["门将", "后卫", "中场", "前锋"] as const;
 
 export function SquadScreen() {
+  const { copy, getPlayerStatusLabel, getPositionLabel } = useAppLanguage();
   const query = useQuery({
     queryKey: ["squad"],
     queryFn: () => fetchApi("/api/team/squad", apiEnvelopeSchema(squadPlayerSchema.array()))
@@ -20,9 +22,8 @@ export function SquadScreen() {
   return (
     <AppShell pathname="/squad">
       <div className="space-y-6">
-        <SectionTitle eyebrow="Team">一线队阵容</SectionTitle>
         {query.isLoading ? <LoadingCards lines={3} /> : null}
-        {query.isError ? <ErrorPanel title="阵容同步失败" detail="当前无法获取一线队名单。" /> : null}
+        {query.isError ? <ErrorPanel title={copy.squadError} detail={copy.squadErrorDesc} /> : null}
         {query.data?.stale ? <StalePanel syncedAt={query.data.syncedAt} /> : null}
 
         {positionGroups.map((group) => {
@@ -33,14 +34,14 @@ export function SquadScreen() {
 
           return (
             <section key={group} className="space-y-3">
-              <SectionTitle>{group}</SectionTitle>
+              <SectionTitle>{getPositionLabel(group)}</SectionTitle>
               {players.map((player) => (
                 <Card key={player.id} className="p-4">
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <p className="text-base font-semibold text-text-primary">{player.name}</p>
                       <p className="mt-1 text-sm text-text-secondary">
-                        {player.nationality} · {player.status}
+                        {player.nationality} · {getPlayerStatusLabel(player.status)}
                       </p>
                     </div>
                     <p className="numeric text-2xl font-semibold text-text-primary">#{player.shirtNumber}</p>

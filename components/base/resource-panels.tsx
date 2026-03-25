@@ -1,4 +1,8 @@
+"use client";
+
 import { AlertTriangle, LoaderCircle } from "lucide-react";
+
+import { useAppLanguage } from "@/hooks/use-app-language";
 
 import { Card } from "./card";
 
@@ -34,11 +38,13 @@ export function ErrorPanel({ title, detail }: { title: string; detail: string })
 }
 
 export function StalePanel({ syncedAt }: { syncedAt: string }) {
+  const { copy, formatUiDateTime } = useAppLanguage();
+
   return (
     <Card className="mb-4 border-warning/30 bg-warning/10 p-3">
       <div className="flex items-center gap-2 text-sm text-warning">
         <LoaderCircle className="h-4 w-4" />
-        当前展示最近一次成功同步结果，最后同步于 {new Date(syncedAt).toLocaleString("zh-CN")}
+        {copy.stalePrefix} {formatUiDateTime(syncedAt)}
       </div>
     </Card>
   );

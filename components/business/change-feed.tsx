@@ -1,4 +1,8 @@
+"use client";
+
 import { ArrowUpRight, ShieldAlert, Siren, Sparkles } from "lucide-react";
+
+import { useAppLanguage } from "@/hooks/use-app-language";
 
 import { Card } from "@/components/base/card";
 import type { ChangeAlert } from "@/lib/types";
@@ -14,7 +18,15 @@ const iconMap = {
   "fixture-time": Siren
 } as const;
 
+function getSeverityLabel(language: "zh" | "ug", severity: ChangeAlert["severity"]) {
+  const zh = { low: "低", medium: "中", high: "高" } as const;
+  const ug = { low: "تۆۋەن", medium: "ئوتتۇرا", high: "يۇقىرى" } as const;
+  return (language === "ug" ? ug : zh)[severity];
+}
+
 export function ChangeFeed({ items }: { items: ChangeAlert[] }) {
+  const { language } = useAppLanguage();
+
   return (
     <div className="space-y-3">
       {items.map((item) => {
@@ -28,7 +40,9 @@ export function ChangeFeed({ items }: { items: ChangeAlert[] }) {
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-3">
                   <h3 className="text-sm font-semibold text-text-primary">{item.title}</h3>
-                  <span className="text-[11px] uppercase tracking-[0.16em] text-text-muted">{item.severity}</span>
+                  <span className="text-[11px] tracking-[0.16em] text-text-muted">
+                    {getSeverityLabel(language, item.severity)}
+                  </span>
                 </div>
                 <p className="mt-2 text-sm leading-6 text-text-secondary">{item.detail}</p>
               </div>

@@ -1,7 +1,12 @@
+"use client";
+
+import { useAppLanguage } from "@/hooks/use-app-language";
+
 import { Card } from "@/components/base/card";
 
 export function CountdownDigits({ label }: { label?: string | null }) {
-  const parts = (label ?? "等待赛程").split(" ");
+  const { copy } = useAppLanguage();
+  const parts = (label ?? copy.awaitingSchedule).split(" ");
 
   return (
     <div className="grid grid-cols-2 gap-2">

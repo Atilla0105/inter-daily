@@ -1,10 +1,16 @@
+"use client";
+
 import Link from "next/link";
+
+import { useAppLanguage } from "@/hooks/use-app-language";
 
 import { Card } from "@/components/base/card";
 import { Chip } from "@/components/base/chip";
 import type { NewsItem } from "@/lib/types";
 
 export function NewsPriorityList({ items }: { items: NewsItem[] }) {
+  const { getNewsCategoryLabel, copy } = useAppLanguage();
+
   return (
     <div className="space-y-3">
       {items.map((item, index) => (
@@ -13,9 +19,9 @@ export function NewsPriorityList({ items }: { items: NewsItem[] }) {
             <div className="mb-3 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <Chip tone={item.category === "official" ? "brand" : item.category === "transfers" ? "gold" : "neutral"}>
-                  {item.category === "official" ? "官方" : item.category === "transfers" ? "转会" : "比赛日"}
+                  {getNewsCategoryLabel(item.category)}
                 </Chip>
-                <p className="text-xs text-text-muted">TOP {index + 1}</p>
+                <p className="text-xs text-text-muted">{copy.importantRank(index + 1)}</p>
               </div>
               <p className="text-xs text-text-muted">{item.sourceName}</p>
             </div>

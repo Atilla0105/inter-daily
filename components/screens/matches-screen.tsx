@@ -5,30 +5,31 @@ import { useState } from "react";
 
 import { AppShell } from "@/components/base/app-shell";
 import { EmptyState } from "@/components/base/empty-state";
-import { PageHeader } from "@/components/base/page-header";
+import { OfflineBadge } from "@/components/base/offline-badge";
 import { ErrorPanel, LoadingCards, StalePanel } from "@/components/base/resource-panels";
 import { SectionTitle } from "@/components/base/section-title";
 import { SegmentedTabs } from "@/components/base/segmented-tabs";
 import { FixtureCardView } from "@/components/business/fixture-card-view";
+import { useAppLanguage } from "@/hooks/use-app-language";
 import { useNetworkStatus } from "@/hooks/use-network-status";
 import { useTimeZone } from "@/hooks/use-timezone";
 import { apiEnvelopeSchema, fixtureCardSchema } from "@/lib/schemas";
 import { fetchApi } from "@/lib/services/api";
 
-const competitionOptions: { label: string; value: "all" | "serie-a" | "ucl" | "coppa-italia" }[] = [
-  { label: "全部", value: "all" },
-  { label: "意甲", value: "serie-a" },
-  { label: "欧冠", value: "ucl" },
-  { label: "意杯", value: "coppa-italia" }
-] ;
-
-const statusOptions: { label: string; value: "upcoming" | "finished" | "all" }[] = [
-  { label: "Upcoming", value: "upcoming" },
-  { label: "Finished", value: "finished" },
-  { label: "All", value: "all" }
-] ;
-
 export function MatchesScreen() {
+  const { copy, getCompetitionLabel } = useAppLanguage();
+  const competitionOptions = [
+    { label: copy.filterAll, value: "all" },
+    { label: getCompetitionLabel("serie-a"), value: "serie-a" },
+    { label: getCompetitionLabel("ucl"), value: "ucl" },
+    { label: getCompetitionLabel("coppa-italia"), value: "coppa-italia" }
+  ] as const;
+  const statusOptions = [
+    { label: copy.filterUpcoming, value: "upcoming" },
+    { label: copy.filterFinished, value: "finished" },
+    { label: copy.filterAll, value: "all" }
+  ] as const;
+
   const [competition, setCompetition] = useState<(typeof competitionOptions)[number]["value"]>("all");
   const [status, setStatus] = useState<(typeof statusOptions)[number]["value"]>("upcoming");
   const timeZone = useTimeZone();
@@ -46,24 +47,23 @@ export function MatchesScreen() {
   return (
     <AppShell pathname="/matches">
       <div className="space-y-6">
-        <PageHeader
-          title="赛程"
-          subtitle={`全部时间已转换为 ${timeZone.replace("_", " ")}。`}
-          offline={!isOnline}
-        />
+        <div className="flex flex-wrap items-center gap-2">
+          <OfflineBadge offline={!isOnline} />
+          <span className="text-sm text-text-secondary">{copy.matchesLocalTime(timeZone)}</span>
+        </div>
 
         <div className="space-y-3">
-          <SectionTitle eyebrow="Competitions">赛事筛选</SectionTitle>
+          <SectionTitle>{copy.filterCompetitions}</SectionTitle>
           <SegmentedTabs options={competitionOptions} value={competition} onChange={setCompetition} compact />
           <SegmentedTabs options={statusOptions} value={status} onChange={setStatus} compact />
         </div>
 
         {query.isLoading ? <LoadingCards lines={3} /> : null}
-        {query.isError ? <ErrorPanel title="赛程同步失败" detail="无法载入赛程列表，请稍后再试。" /> : null}
+        {query.isError ? <ErrorPanel title={copy.matchesError} detail={copy.matchesErrorDesc} /> : null}
         {query.data?.stale ? <StalePanel syncedAt={query.data.syncedAt} /> : null}
 
         {query.data && query.data.data.length === 0 ? (
-          <EmptyState title="当前筛选下暂无比赛" description="切换赛事或时间状态后再看一下。" />
+          <EmptyState title={copy.matchesEmpty} description={copy.matchesEmptyDesc} />
         ) : null}
 
         <div className="space-y-3">

@@ -1,22 +1,27 @@
+"use client";
+
 import Link from "next/link";
 import { CalendarDays, House, Newspaper, Shield, UserRound } from "lucide-react";
 
+import { useAppLanguage } from "@/hooks/use-app-language";
 import { cn } from "@/lib/utils/cn";
 
 const tabs = [
-  { href: "/", label: "Home", icon: House, match: (pathname: string) => pathname === "/" },
+  { href: "/", labelKey: "tabHome", icon: House, match: (pathname: string) => pathname === "/" },
   {
     href: "/matches",
-    label: "Matches",
+    labelKey: "tabMatches",
     icon: CalendarDays,
     match: (pathname: string) => pathname.startsWith("/matches") || pathname.startsWith("/fixtures")
   },
-  { href: "/live", label: "球队", icon: Shield, match: (pathname: string) => pathname.startsWith("/live") },
-  { href: "/news", label: "News", icon: Newspaper, match: (pathname: string) => pathname.startsWith("/news") },
-  { href: "/my", label: "My", icon: UserRound, match: (pathname: string) => pathname.startsWith("/my") }
+  { href: "/live", labelKey: "tabTeam", icon: Shield, match: (pathname: string) => pathname.startsWith("/live") },
+  { href: "/news", labelKey: "tabNews", icon: Newspaper, match: (pathname: string) => pathname.startsWith("/news") },
+  { href: "/my", labelKey: "tabMy", icon: UserRound, match: (pathname: string) => pathname.startsWith("/my") }
 ] as const;
 
 export function TabBar({ pathname }: { pathname: string }) {
+  const { copy } = useAppLanguage();
+
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-[calc(var(--safe-bottom)+12px)]">
       <nav className="pointer-events-auto w-full max-w-[430px] rounded-[28px] border border-border-subtle bg-bg-secondary/95 px-3 py-2 backdrop-blur-md">
@@ -34,7 +39,7 @@ export function TabBar({ pathname }: { pathname: string }) {
                   )}
                 >
                   <Icon className={cn("h-5 w-5", active && "text-brand-primary")} />
-                  <span>{tab.label}</span>
+                  <span>{copy[tab.labelKey]}</span>
                 </Link>
               </li>
             );

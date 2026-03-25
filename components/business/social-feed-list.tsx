@@ -1,22 +1,16 @@
 "use client";
 
-import { formatInTimeZone } from "date-fns-tz";
 import Image from "next/image";
+
+import { useAppLanguage } from "@/hooks/use-app-language";
 
 import { Card } from "@/components/base/card";
 import type { SocialFeedItem } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
 
-function formatPublishedAt(iso: string, timeZone: string) {
-  const parsed = new Date(iso);
-  if (Number.isNaN(parsed.getTime())) {
-    return "时间待确认";
-  }
-
-  return formatInTimeZone(parsed, timeZone, "MM月dd日 HH:mm");
-}
-
 export function SocialFeedList({ items, timeZone }: { items: SocialFeedItem[]; timeZone: string }) {
+  const { getSocialPostLabel, getSocialSourceLabel, formatUiMonthDayTime } = useAppLanguage();
+
   return (
     <div className="space-y-3">
       {items.map((item) => {
@@ -28,7 +22,7 @@ export function SocialFeedList({ items, timeZone }: { items: SocialFeedItem[]; t
               <div className="relative aspect-[4/3] overflow-hidden border-b border-border-subtle bg-bg-secondary">
                 <Image
                   src={item.thumbnail!}
-                  alt={`${item.sourceLabel} ${item.postType}`}
+                  alt={`${item.sourceLabel} ${getSocialPostLabel(item.postType)}`}
                   fill
                   sizes="(max-width: 430px) 100vw, 430px"
                   className="object-cover"
@@ -43,7 +37,7 @@ export function SocialFeedList({ items, timeZone }: { items: SocialFeedItem[]; t
                       item.postType === "reel" ? "bg-live/15 text-live" : "bg-brand-soft text-brand-primary"
                     }`}
                   >
-                    {item.postType === "reel" ? "Reel" : "Post"}
+                    {getSocialPostLabel(item.postType)}
                   </span>
                 </div>
               </div>
@@ -60,7 +54,7 @@ export function SocialFeedList({ items, timeZone }: { items: SocialFeedItem[]; t
                       item.postType === "reel" ? "bg-live/15 text-live" : "bg-brand-soft text-brand-primary"
                     }`}
                   >
-                    {item.postType === "reel" ? "Reel" : "Post"}
+                    {getSocialPostLabel(item.postType)}
                   </span>
                 </div>
               ) : null}
@@ -69,7 +63,7 @@ export function SocialFeedList({ items, timeZone }: { items: SocialFeedItem[]; t
                 <div>
                   <p className="text-sm font-semibold text-text-primary">{item.sourceLabel}</p>
                   <p className="text-xs text-text-muted">
-                    {item.sourceType === "club" ? "俱乐部镜像" : "球员镜像"} · {formatPublishedAt(item.publishedAt, timeZone)}
+                    {getSocialSourceLabel(item.sourceType)} · {formatUiMonthDayTime(item.publishedAt, timeZone)}
                   </p>
                 </div>
               </div>

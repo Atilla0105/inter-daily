@@ -21,6 +21,7 @@ type PreferencesContextValue = {
   setPreferences: Dispatch<SetStateAction<UserPreferences>>;
   toggleSavedFixture: (fixtureId: string) => void;
   toggleSavedNews: (newsId: string) => void;
+  setLanguage: (language: UserPreferences["language"]) => void;
   setTheme: (theme: UserPreferences["theme"]) => void;
   setMotion: (motion: UserPreferences["motion"]) => void;
   setRating: (fixtureId: string, rating: number) => void;
@@ -50,6 +51,8 @@ export function PreferencesProvider({ children }: PropsWithChildren) {
   }, []);
 
   useEffect(() => {
+    document.documentElement.lang = preferences.language === "ug" ? "ug-CN" : "zh-CN";
+    document.documentElement.dataset.language = preferences.language;
     document.documentElement.dataset.theme = preferences.theme;
     document.documentElement.dataset.motion = preferences.motion;
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(preferences));
@@ -73,6 +76,7 @@ export function PreferencesProvider({ children }: PropsWithChildren) {
             ? current.savedNewsIds.filter((id) => id !== newsId)
             : [...current.savedNewsIds, newsId]
         })),
+      setLanguage: (language) => setPreferences((current) => ({ ...current, language })),
       setTheme: (theme) => setPreferences((current) => ({ ...current, theme })),
       setMotion: (motion) => setPreferences((current) => ({ ...current, motion })),
       setRating: (fixtureId, rating) =>

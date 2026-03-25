@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Inter Daily",
-    short_name: "Inter Daily",
+    name: "国米日报",
+    short_name: "国米日报",
     description: "国际米兰球迷的比赛日移动端控制台。",
     start_url: "/",
     display: "standalone",

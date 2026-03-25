@@ -261,6 +261,7 @@ export const socialFeedItemSchema = z.object({
 });
 
 export const userPreferencesSchema = z.object({
+  language: z.enum(["zh", "ug"]).default("zh"),
   theme: z.enum(["classic", "contrast"]),
   motion: z.enum(["full", "reduced"]),
   notifications: z.object({
