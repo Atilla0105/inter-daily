@@ -38,6 +38,57 @@ const sourceBundleSchema = z.object({
   )
 });
 
+function hasBriefingContent(briefing: HomeEditorial) {
+  return (
+    briefing.topNews.length > 0 ||
+    briefing.clubUpdates.length > 0 ||
+    briefing.playerWatch.length > 0 ||
+    briefing.injuryTransferWatch.length > 0 ||
+    briefing.dailyChanges.length > 0 ||
+    briefing.matchStoryline !== null
+  );
+}
+
+function buildFallbackBriefingFromSources(sourceBundle: z.infer<typeof sourceBundleSchema>): HomeEditorial {
+  const articles = sourceBundle.articles;
+  const listing = sourceBundle.listing;
+
+  return {
+    topNews: articles.slice(0, 3).map((article) => ({
+      title: article.title,
+      summary: article.excerpt || article.body.slice(0, 140),
+      source: article.source,
+      publishedAt: article.publishedAt,
+      url: article.url
+    })),
+    clubUpdates: articles
+      .filter((article) => article.category === "official" || article.category === "matchday")
+      .slice(0, 2)
+      .map((article) => ({
+        title: article.title,
+        summary: article.excerpt || article.body.slice(0, 120),
+        source: article.source,
+        publishedAt: article.publishedAt
+      })),
+    playerWatch: [],
+    injuryTransferWatch: articles
+      .filter((article) => article.category === "transfers")
+      .slice(0, 2)
+      .map((article) => ({
+        type: "transfer" as const,
+        title: article.title,
+        summary: article.excerpt || article.body.slice(0, 120),
+        source: article.source,
+        publishedAt: article.publishedAt
+      })),
+    matchStoryline: null,
+    dailyChanges: listing.slice(0, 3).map((item) => ({
+      label: item.title,
+      detail: `${item.source} · ${item.publishedAt.slice(5, 16).replace("T", " ")}`
+    }))
+  };
+}
+
 function stripCodeFence(input: string) {
   return input.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim();
 }
@@ -196,7 +247,8 @@ ${JSON.stringify(sourceBundle)}`
         });
 
         const raw = response.choices[0]?.message?.content ?? "{}";
-        return homeEditorialSchema.parse(JSON.parse(stripCodeFence(raw)));
+        const parsed = homeEditorialSchema.parse(JSON.parse(stripCodeFence(raw)));
+        return hasBriefingContent(parsed) ? parsed : buildFallbackBriefingFromSources(sourceBundle);
       }),
     briefingTimeoutMs,
     {

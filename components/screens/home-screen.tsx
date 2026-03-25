@@ -11,6 +11,7 @@ import { ErrorPanel, LoadingCards, StalePanel } from "@/components/base/resource
 import { SectionTitle } from "@/components/base/section-title";
 import { SegmentedTabs } from "@/components/base/segmented-tabs";
 import { ChangeFeed } from "@/components/business/change-feed";
+import { BriefingPanel } from "@/components/business/briefing-panel";
 import { MemoryCard } from "@/components/business/memory-card";
 import { NewsPriorityList } from "@/components/business/news-priority-list";
 import { NextMatchHero } from "@/components/business/next-match-hero";
@@ -83,6 +84,11 @@ export function HomeScreen() {
                 <StandingsMiniCard standings={query.data.data.standingsSummary} />
               </section>
             ) : null}
+
+            <section className="space-y-3">
+              <SectionTitle eyebrow={copy.briefingEyebrow}>{copy.briefingTitle}</SectionTitle>
+              <BriefingPanel editorial={query.data.data.editorial} />
+            </section>
 
             <section className="space-y-3">
               <SectionTitle
