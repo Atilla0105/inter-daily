@@ -8,6 +8,7 @@ import { getCachedOrLoad } from "@/lib/server/cache";
 import { EMPTY_HOME_EDITORIAL, type ApiEnvelope, type HomeEditorial } from "@/lib/types";
 
 const briefingCacheTtlSeconds = 7200;
+const briefingCacheKey = "briefing:v2:daily";
 const maxListingItems = 6;
 const maxArticleItems = 4;
 const maxBodyChars = 5000;
@@ -161,7 +162,7 @@ export async function generateDailyBriefing(): Promise<HomeEditorial> {
 export async function getDailyBriefingData(): Promise<ApiEnvelope<HomeEditorial>> {
   const result = await withTimeout(
     () =>
-      getCachedOrLoad("briefing:daily", briefingCacheTtlSeconds, async () => {
+      getCachedOrLoad(briefingCacheKey, briefingCacheTtlSeconds, async () => {
         const sourceBundle = await buildSourceBundle();
         if (sourceBundle.articles.length === 0) {
           return sourceBundle.listing.length > 0 ? buildFallbackBriefingFromSources(sourceBundle) : createBriefingFallback();
