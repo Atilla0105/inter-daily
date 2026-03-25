@@ -190,34 +190,54 @@ export type ChangeAlert = {
   severity: "low" | "medium" | "high";
 };
 
-export type EditorialNewsSummary = {
-  newsId: string;
-  summary: string;
-  sourceUrls: string[];
-};
-
-export type EditorialBrief = {
+export type EditorialTopNewsItem = {
   title: string;
-  detail: string;
-  sourceUrls: string[];
-  sourceTitles: string[];
-  severity: "low" | "medium" | "high";
-  type?: ChangeAlert["type"] | "club" | "player";
+  summary: string;
+  source: string;
+  publishedAt: string;
+  url: string;
 };
 
-export type EditorialStoryline = {
-  summary: string | null;
-  bullets: string[];
-  sourceUrls: string[];
+export type EditorialClubUpdate = {
+  title: string;
+  summary: string;
+  source: string;
+  publishedAt: string;
+};
+
+export type EditorialPlayerWatchItem = {
+  player: string;
+  update: string;
+  source: string;
+  publishedAt: string;
+};
+
+export type EditorialInjuryTransferItem = {
+  type: "injury" | "transfer";
+  title: string;
+  summary: string;
+  source: string;
+  publishedAt: string;
+};
+
+export type EditorialMatchStoryline = {
+  headline: string;
+  summary: string;
+  sources: string[];
+};
+
+export type EditorialDailyChange = {
+  label: string;
+  detail: string;
 };
 
 export type HomeEditorial = {
-  topNewsSummaries: EditorialNewsSummary[];
-  clubUpdates: EditorialBrief[];
-  playerUpdates: EditorialBrief[];
-  injuryTransferWatch: EditorialBrief[];
-  dailyChangeDigest: EditorialBrief[];
-  preMatchStoryline: EditorialStoryline | null;
+  topNews: EditorialTopNewsItem[];
+  clubUpdates: EditorialClubUpdate[];
+  playerWatch: EditorialPlayerWatchItem[];
+  injuryTransferWatch: EditorialInjuryTransferItem[];
+  matchStoryline: EditorialMatchStoryline | null;
+  dailyChanges: EditorialDailyChange[];
 };
 
 export type MemoryEntry = {
@@ -339,12 +359,12 @@ export const DEFAULT_PROVIDER_CAPABILITIES: ProviderCapability = {
 };
 
 export const EMPTY_HOME_EDITORIAL: HomeEditorial = {
-  topNewsSummaries: [],
+  topNews: [],
   clubUpdates: [],
-  playerUpdates: [],
+  playerWatch: [],
   injuryTransferWatch: [],
-  dailyChangeDigest: [],
-  preMatchStoryline: null
+  matchStoryline: null,
+  dailyChanges: []
 };
 
 export const DEFAULT_PREFERENCES: UserPreferences = {

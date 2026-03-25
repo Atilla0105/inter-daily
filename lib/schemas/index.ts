@@ -77,36 +77,54 @@ export const changeAlertSchema = z.object({
   severity: z.enum(["low", "medium", "high"])
 });
 
-export const editorialNewsSummarySchema = z.object({
-  newsId: z.string(),
-  summary: z.string(),
-  sourceUrls: z.array(z.string().url())
-});
-
-export const editorialBriefSchema = z.object({
+export const editorialTopNewsItemSchema = z.object({
   title: z.string(),
-  detail: z.string(),
-  sourceUrls: z.array(z.string().url()),
-  sourceTitles: z.array(z.string()),
-  severity: z.enum(["low", "medium", "high"]),
-  type: z
-    .enum(["fixture-time", "injury", "suspension", "ranking", "lineup", "result", "news", "transfer", "club", "player"])
-    .optional()
+  summary: z.string(),
+  source: z.string(),
+  publishedAt: z.string(),
+  url: z.string().url()
 });
 
-export const editorialStorylineSchema = z.object({
-  summary: z.string().nullable(),
-  bullets: z.array(z.string()),
-  sourceUrls: z.array(z.string().url())
+export const editorialClubUpdateSchema = z.object({
+  title: z.string(),
+  summary: z.string(),
+  source: z.string(),
+  publishedAt: z.string()
+});
+
+export const editorialPlayerWatchItemSchema = z.object({
+  player: z.string(),
+  update: z.string(),
+  source: z.string(),
+  publishedAt: z.string()
+});
+
+export const editorialInjuryTransferItemSchema = z.object({
+  type: z.enum(["injury", "transfer"]),
+  title: z.string(),
+  summary: z.string(),
+  source: z.string(),
+  publishedAt: z.string()
+});
+
+export const editorialMatchStorylineSchema = z.object({
+  headline: z.string(),
+  summary: z.string(),
+  sources: z.array(z.string())
+});
+
+export const editorialDailyChangeSchema = z.object({
+  label: z.string(),
+  detail: z.string()
 });
 
 export const homeEditorialSchema = z.object({
-  topNewsSummaries: z.array(editorialNewsSummarySchema),
-  clubUpdates: z.array(editorialBriefSchema),
-  playerUpdates: z.array(editorialBriefSchema),
-  injuryTransferWatch: z.array(editorialBriefSchema),
-  dailyChangeDigest: z.array(editorialBriefSchema),
-  preMatchStoryline: editorialStorylineSchema.nullable()
+  topNews: z.array(editorialTopNewsItemSchema),
+  clubUpdates: z.array(editorialClubUpdateSchema),
+  playerWatch: z.array(editorialPlayerWatchItemSchema),
+  injuryTransferWatch: z.array(editorialInjuryTransferItemSchema),
+  matchStoryline: editorialMatchStorylineSchema.nullable(),
+  dailyChanges: z.array(editorialDailyChangeSchema)
 });
 
 export const standingSummarySchema = z.object({

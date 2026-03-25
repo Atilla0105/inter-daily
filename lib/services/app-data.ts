@@ -287,32 +287,52 @@ function buildEditorialSourceCatalog(items: NewsItem[]) {
     }));
 }
 
-function mapEditorialBriefsToAlerts(
+function mapEditorialChangeItemsToAlerts(
   items: Array<{
-    title: string;
+    label: string;
     detail: string;
-    severity: "low" | "medium" | "high";
-    type?: ChangeAlert["type"] | "club" | "player";
   }>,
   fallbackType: ChangeAlert["type"]
 ): ChangeAlert[] {
   return items.map((item, index) => ({
     id: `editorial-${fallbackType}-${index + 1}`,
-    type:
-      item.type === "club" || item.type === "player" || item.type === undefined ? fallbackType : (item.type as ChangeAlert["type"]),
-    title: item.title,
+    type: fallbackType,
+    title: item.label,
     detail: item.detail,
     occurredAt: new Date().toISOString(),
-    severity: item.severity
+    severity: "medium"
   }));
 }
 
-function applyEditorialSummaries(news: NewsItem[], summaries: HomePayload["editorial"]["topNewsSummaries"]) {
-  const summaryMap = new Map(summaries.map((item) => [item.newsId, item.summary]));
+function mapEditorialWatchToAlerts(
+  items: Array<{
+    type: "injury" | "transfer";
+    title: string;
+    summary: string;
+    publishedAt: string;
+  }>
+): ChangeAlert[] {
+  return items.map((item, index) => ({
+    id: `editorial-watch-${item.type}-${index + 1}`,
+    type: item.type,
+    title: item.title,
+    detail: item.summary,
+    occurredAt: item.publishedAt || new Date().toISOString(),
+    severity: item.type === "injury" ? "medium" : "low"
+  }));
+}
+
+function normalizeTextKey(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function applyEditorialSummaries(news: NewsItem[], summaries: HomePayload["editorial"]["topNews"]) {
+  const summaryByUrl = new Map(summaries.map((item) => [item.url, item.summary]));
+  const summaryByTitle = new Map(summaries.map((item) => [normalizeTextKey(item.title), item.summary]));
 
   return news.map((item) => ({
     ...item,
-    excerpt: summaryMap.get(item.id) ?? item.excerpt
+    excerpt: summaryByUrl.get(item.canonicalUrl) ?? summaryByTitle.get(normalizeTextKey(item.title)) ?? item.excerpt
   }));
 }
 
@@ -372,16 +392,16 @@ export async function getHomePayload(timeZone: string): Promise<ApiEnvelope<Home
         : createTimedFallback(EMPTY_HOME_EDITORIAL);
 
     const editorial = editorialResult.data;
-    const topNews = applyEditorialSummaries(news.slice(0, 3), editorial.topNewsSummaries);
+    const topNews = applyEditorialSummaries(news.slice(0, 3), editorial.topNews);
     const changes =
-      editorial.dailyChangeDigest.length > 0
-        ? mapEditorialBriefsToAlerts(editorial.dailyChangeDigest, "news")
+      editorial.dailyChanges.length > 0
+        ? mapEditorialChangeItemsToAlerts(editorial.dailyChanges, "news")
         : recentChanges.length > 0
           ? recentChanges
           : buildRecentChangesFallback();
     const injuriesAndTransfers =
       editorial.injuryTransferWatch.length > 0
-        ? mapEditorialBriefsToAlerts(editorial.injuryTransferWatch, "transfer")
+        ? mapEditorialWatchToAlerts(editorial.injuryTransferWatch)
         : recentChanges
             .filter((item) => item.type === "transfer" || item.type === "injury" || item.type === "suspension")
             .slice(0, 3)
@@ -391,10 +411,10 @@ export async function getHomePayload(timeZone: string): Promise<ApiEnvelope<Home
     return {
       ...homeSeed,
       nextFixture:
-        nextFixture && editorial.preMatchStoryline?.summary
+        nextFixture && editorial.matchStoryline?.summary
           ? {
               ...nextFixture,
-              keyStory: editorial.preMatchStoryline.summary
+              keyStory: editorial.matchStoryline.summary
             }
           : nextFixture,
       lastFixture: lastFinished ?? null,

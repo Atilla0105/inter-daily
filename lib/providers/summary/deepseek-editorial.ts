@@ -27,58 +27,51 @@ const fixtureStorylineSchema = z.object({
 });
 
 const homeEditorialResultSchema = z.object({
-  topNewsSummaries: z.array(
+  topNews: z.array(
     z.object({
-      newsId: z.string(),
+      title: z.string(),
       summary: z.string(),
-      sourceUrls: z.array(z.string().url())
+      source: z.string(),
+      publishedAt: z.string(),
+      url: z.string().url()
     })
   ),
   clubUpdates: z.array(
     z.object({
       title: z.string(),
-      detail: z.string(),
-      sourceUrls: z.array(z.string().url()),
-      sourceTitles: z.array(z.string()),
-      severity: z.enum(["low", "medium", "high"]),
-      type: z.enum(["fixture-time", "injury", "suspension", "ranking", "lineup", "result", "news", "transfer", "club", "player"]).optional()
+      summary: z.string(),
+      source: z.string(),
+      publishedAt: z.string()
     })
   ),
-  playerUpdates: z.array(
+  playerWatch: z.array(
     z.object({
-      title: z.string(),
-      detail: z.string(),
-      sourceUrls: z.array(z.string().url()),
-      sourceTitles: z.array(z.string()),
-      severity: z.enum(["low", "medium", "high"]),
-      type: z.enum(["fixture-time", "injury", "suspension", "ranking", "lineup", "result", "news", "transfer", "club", "player"]).optional()
+      player: z.string(),
+      update: z.string(),
+      source: z.string(),
+      publishedAt: z.string()
     })
   ),
   injuryTransferWatch: z.array(
     z.object({
+      type: z.enum(["injury", "transfer"]),
       title: z.string(),
-      detail: z.string(),
-      sourceUrls: z.array(z.string().url()),
-      sourceTitles: z.array(z.string()),
-      severity: z.enum(["low", "medium", "high"]),
-      type: z.enum(["injury", "suspension", "transfer"]).optional()
+      summary: z.string(),
+      source: z.string(),
+      publishedAt: z.string()
     })
   ),
-  dailyChangeDigest: z.array(
+  dailyChanges: z.array(
     z.object({
-      title: z.string(),
+      label: z.string(),
       detail: z.string(),
-      sourceUrls: z.array(z.string().url()),
-      sourceTitles: z.array(z.string()),
-      severity: z.enum(["low", "medium", "high"]),
-      type: z.enum(["fixture-time", "injury", "suspension", "ranking", "lineup", "result", "news", "transfer"]).optional()
     })
   ),
-  preMatchStoryline: z
+  matchStoryline: z
     .object({
-      summary: z.string().nullable(),
-      bullets: z.array(z.string()),
-      sourceUrls: z.array(z.string().url())
+      headline: z.string(),
+      summary: z.string(),
+      sources: z.array(z.string())
     })
     .nullable()
 });
@@ -682,7 +675,7 @@ function buildHomeMessages(input: HomeEditorialInput): ChatMessage[] {
     },
     {
       role: "user",
-      content: `Generate home editorial modules for Inter Daily.\nRules:\n- sports facts in the context are deterministic and may be referenced directly\n- when you need official news evidence, first call fetch_url with listingUrl, then parse_inter_news_page, then extract_article_text for selected article URLs\n- inspect at most 3 articles unless the evidence is still insufficient\n- if an item has no supporting evidence from provided context or tools, leave it out\n- preMatchStoryline must be null when there is no upcoming or live fixture\n- use only source ids from sourceCatalog for topNewsSummaries; parse_inter_news_page may return matchedSourceId to help you map articles\n\nContext JSON:\n${JSON.stringify(deterministicContext, null, 2)}`
+      content: `Generate home editorial modules for Inter Daily.\nRules:\n- sports facts in the context are deterministic and may be referenced directly\n- when you need official news evidence, first call fetch_url with listingUrl, then parse_inter_news_page, then extract_article_text for selected article URLs\n- inspect at most 3 articles unless the evidence is still insufficient\n- if an item has no supporting evidence from provided context or tools, leave it out\n- matchStoryline must be null when there is no upcoming or live fixture or there is not enough evidence\n- topNews items must use the exact article title, url, source, and publishedAt from trusted evidence\n- clubUpdates must contain title, summary, source, publishedAt\n- playerWatch must contain player, update, source, publishedAt\n- injuryTransferWatch must contain type, title, summary, source, publishedAt\n- dailyChanges must contain label and detail only\n\nContext JSON:\n${JSON.stringify(deterministicContext, null, 2)}`
     }
   ];
 }
@@ -744,7 +737,7 @@ export class DeepSeekEditorialProvider implements SummaryProvider {
       return await finalizeJson(
         messages,
         homeEditorialResultSchema,
-        "Return JSON only with keys: topNewsSummaries, clubUpdates, playerUpdates, injuryTransferWatch, dailyChangeDigest, preMatchStoryline. If evidence is weak or missing, use [] or null. No markdown."
+        "Return JSON only with keys: topNews, clubUpdates, playerWatch, injuryTransferWatch, matchStoryline, dailyChanges. If evidence is weak or missing, use [] or null. Do not add extra keys. No markdown."
       );
     } catch {
       return EMPTY_HOME_EDITORIAL;
