@@ -28,7 +28,7 @@ export function FixtureDetailScreen({ id }: { id: string }) {
 
   return (
     <AppShell pathname={`/fixtures/${id}`}>
-      <div className="space-y-5">
+      <div className="space-y-6">
         <div className="flex justify-end">
           <Link href="/matches" className="rounded-full border border-border-subtle px-4 py-2 text-sm text-text-secondary">
             {copy.fixtureDetailBack}
@@ -47,12 +47,12 @@ export function FixtureDetailScreen({ id }: { id: string }) {
           <>
             <ScoreStrip fixture={query.data.data.fixture} label={copy.scoreAndStatus} />
 
-            <section className="space-y-2.5">
+            <section className="space-y-3">
               <SectionTitle>{copy.fixtureSummary}</SectionTitle>
               <div className="rounded-xl bg-white/4 p-4 text-sm leading-6 text-text-secondary">{query.data.data.summary}</div>
             </section>
 
-            <section className="space-y-2.5">
+            <section className="space-y-3">
               <SectionTitle>{copy.fixtureTimeline}</SectionTitle>
               {query.data.data.timeline ? (
                 <TimelineFeed items={query.data.data.timeline} />
@@ -61,7 +61,7 @@ export function FixtureDetailScreen({ id }: { id: string }) {
               )}
             </section>
 
-            <section className="space-y-2.5">
+            <section className="space-y-3">
               <SectionTitle>{copy.fixtureLineups}</SectionTitle>
               {query.data.data.lineups ? (
                 <LineupGrid home={query.data.data.lineups.home} away={query.data.data.lineups.away} />
@@ -70,7 +70,7 @@ export function FixtureDetailScreen({ id }: { id: string }) {
               )}
             </section>
 
-            <section className="space-y-2.5">
+            <section className="space-y-3">
               <SectionTitle>{copy.fixtureStats}</SectionTitle>
               {query.data.data.stats ? (
                 <StatBars items={query.data.data.stats} />

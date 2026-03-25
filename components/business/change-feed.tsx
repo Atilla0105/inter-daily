@@ -28,7 +28,7 @@ export function ChangeFeed({ items }: { items: ChangeAlert[] }) {
   const { language } = useAppLanguage();
 
   return (
-    <div className="space-y-2.5">
+    <div className="space-y-4">
       {items.map((item) => {
         const Icon = iconMap[item.type] ?? Sparkles;
         return (

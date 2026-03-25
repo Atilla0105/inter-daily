@@ -21,7 +21,7 @@ export function SquadScreen() {
 
   return (
     <AppShell pathname="/squad">
-      <div className="space-y-5">
+      <div className="space-y-6">
         {query.isLoading ? <LoadingCards lines={3} /> : null}
         {query.isError ? <ErrorPanel title={copy.squadError} detail={copy.squadErrorDesc} /> : null}
         {query.data?.stale ? <StalePanel syncedAt={query.data.syncedAt} /> : null}
@@ -33,21 +33,23 @@ export function SquadScreen() {
           }
 
           return (
-            <section key={group} className="space-y-2.5">
+            <section key={group} className="space-y-3">
               <SectionTitle>{getPositionLabel(group)}</SectionTitle>
-              {players.map((player) => (
-                <Card key={player.id} className="p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-base font-semibold text-text-primary">{player.name}</p>
-                      <p className="mt-1 text-sm text-text-secondary">
-                        {player.nationality} · {getPlayerStatusLabel(player.status)}
-                      </p>
+              <div className="space-y-4">
+                {players.map((player) => (
+                  <Card key={player.id} className="p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-base font-semibold text-text-primary">{player.name}</p>
+                        <p className="mt-1 text-sm text-text-secondary">
+                          {player.nationality} · {getPlayerStatusLabel(player.status)}
+                        </p>
+                      </div>
+                      <p className="numeric text-2xl font-semibold text-text-primary">#{player.shirtNumber}</p>
                     </div>
-                    <p className="numeric text-2xl font-semibold text-text-primary">#{player.shirtNumber}</p>
-                  </div>
-                </Card>
-              ))}
+                  </Card>
+                ))}
+              </div>
             </section>
           );
         })}

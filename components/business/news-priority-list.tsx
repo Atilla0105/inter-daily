@@ -12,11 +12,11 @@ export function NewsPriorityList({ items }: { items: NewsItem[] }) {
   const { getNewsCategoryLabel, copy } = useAppLanguage();
 
   return (
-    <div className="space-y-2.5">
+    <div className="space-y-4">
       {items.map((item, index) => (
         <Link key={item.id} href={`/news/${item.id}`}>
           <Card interactive className="p-4">
-            <div className="mb-2.5 flex items-center justify-between gap-3">
+            <div className="mb-3 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <Chip tone={item.category === "official" ? "brand" : item.category === "transfers" ? "gold" : "neutral"}>
                   {getNewsCategoryLabel(item.category)}

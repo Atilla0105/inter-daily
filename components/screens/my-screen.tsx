@@ -78,12 +78,12 @@ export function MyScreen() {
 
   return (
     <AppShell pathname="/my">
-      <div className="space-y-5">
+      <div className="space-y-6">
         <div className="flex items-center gap-2">
           <OfflineBadge offline={!isOnline} />
         </div>
 
-        <section className="grid grid-cols-2 gap-2.5">
+        <section className="grid grid-cols-2 gap-4">
           <Card className="p-4">
             <p className="text-xs tracking-[0.18em] text-text-muted">{copy.mySaved}</p>
             <p className="numeric mt-2 text-3xl font-semibold text-text-primary">
@@ -102,9 +102,9 @@ export function MyScreen() {
           </Card>
         </section>
 
-        <section className="space-y-2.5">
+        <section className="space-y-3">
           <SectionTitle>{copy.notifications}</SectionTitle>
-          <Card className="space-y-2.5 p-4">
+          <Card className="space-y-3 p-4">
             {[
               ["enabled", copy.notifyAll],
               ["matchReminders", copy.notifyMatch],
@@ -145,7 +145,7 @@ export function MyScreen() {
           </Card>
         </section>
 
-        <section className="space-y-2.5">
+        <section className="space-y-3">
           <SectionTitle>{copy.appearance}</SectionTitle>
           <Card className="space-y-3 p-4">
             <div>
@@ -191,9 +191,9 @@ export function MyScreen() {
           </Card>
         </section>
 
-        <section className="space-y-2.5">
+        <section className="space-y-3">
           <SectionTitle>{copy.pwa}</SectionTitle>
-          <Card className="space-y-2.5 p-4">
+          <Card className="space-y-3 p-4">
             <div className="flex items-start gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 text-brand-primary">
                 <Download className="h-5 w-5" />

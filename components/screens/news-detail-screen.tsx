@@ -32,14 +32,14 @@ export function NewsDetailScreen({ id }: { id: string }) {
 
   return (
     <AppShell pathname={`/news/${id}`}>
-      <div className="space-y-5">
+      <div className="space-y-6">
         {query.isLoading ? <LoadingCards lines={3} /> : null}
         {query.isError ? <ErrorPanel title={copy.newsDetailError} detail={copy.newsDetailErrorDesc} /> : null}
         {query.data?.stale ? <StalePanel syncedAt={query.data.syncedAt} /> : null}
 
         {query.data?.data ? (
           <>
-            <div className="space-y-2.5">
+            <div className="space-y-3">
               <p className="text-xs tracking-[0.18em] text-brand-primary">{query.data.data.sourceName}</p>
               <h1 className="text-[32px] font-semibold leading-tight text-text-primary">{query.data.data.title}</h1>
               <p className="text-sm text-text-secondary">{formatUiDateTime(query.data.data.publishedAt)}</p>
@@ -64,7 +64,7 @@ export function NewsDetailScreen({ id }: { id: string }) {
               {query.data.data.body}
             </div>
 
-            <section className="space-y-2.5">
+            <section className="space-y-3">
               <SectionTitle>{copy.relatedNews}</SectionTitle>
               <NewsPriorityList items={query.data.data.related} />
             </section>

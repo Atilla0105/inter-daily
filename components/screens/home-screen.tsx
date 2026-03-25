@@ -33,7 +33,7 @@ export function HomeScreen() {
 
   return (
     <AppShell pathname="/">
-      <div className="space-y-5">
+      <div className="space-y-6">
         <section className="space-y-3">
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-2">
@@ -71,20 +71,20 @@ export function HomeScreen() {
             {query.data.data.nextFixture ? <NextMatchHero fixture={query.data.data.nextFixture} stale={query.data.stale} /> : null}
 
             {query.data.data.lastFixture ? (
-              <section className="space-y-2.5">
+              <section className="space-y-3">
                 <SectionTitle>{copy.scoreLastResult}</SectionTitle>
                 <ScoreStrip fixture={query.data.data.lastFixture} label={copy.scoreLastResult} />
               </section>
             ) : null}
 
             {query.data.data.standingsSummary ? (
-              <section className="space-y-2.5">
+              <section className="space-y-3">
                 <SectionTitle>{copy.standingsTitle}</SectionTitle>
                 <StandingsMiniCard standings={query.data.data.standingsSummary} />
               </section>
             ) : null}
 
-            <section className="space-y-2.5">
+            <section className="space-y-3">
               <SectionTitle
                 action={
                   <Link href="/news" className="text-sm font-medium text-brand-primary">
@@ -101,24 +101,24 @@ export function HomeScreen() {
               )}
             </section>
 
-            <section className="space-y-2.5">
+            <section className="space-y-3">
               <SectionTitle>{copy.homeChanges}</SectionTitle>
               <ChangeFeed items={query.data.data.injuriesAndTransfers} />
             </section>
 
-            <section className="space-y-2.5">
+            <section className="space-y-3">
               <SectionTitle>{copy.homeBreaking}</SectionTitle>
               <ChangeFeed items={query.data.data.changes} />
             </section>
 
             {query.data.data.memoryCard ? (
-              <section className="space-y-2.5">
+              <section className="space-y-3">
                 <SectionTitle>{copy.homeMemory}</SectionTitle>
                 <MemoryCard item={query.data.data.memoryCard} />
               </section>
             ) : null}
 
-            <section className="grid grid-cols-3 gap-2.5">
+            <section className="grid grid-cols-3 gap-4">
               <Link href="/matches" className="rounded-xl bg-white/4 p-4">
                 <Trophy className="mb-3 h-5 w-5 text-brand-primary" />
                 <p className="text-sm font-medium text-text-primary">{copy.homeMatches}</p>

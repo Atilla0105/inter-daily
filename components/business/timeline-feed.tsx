@@ -3,7 +3,7 @@ import type { TimelineEvent } from "@/lib/types";
 
 export function TimelineFeed({ items }: { items: TimelineEvent[] }) {
   return (
-    <div className="space-y-2.5">
+    <div className="space-y-4">
       {items.map((item) => (
         <Card key={item.id} className="p-4">
           <div className="flex items-start gap-3">

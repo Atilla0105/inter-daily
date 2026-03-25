@@ -46,13 +46,13 @@ export function MatchesScreen() {
 
   return (
     <AppShell pathname="/matches">
-      <div className="space-y-5">
+      <div className="space-y-6">
         <div className="flex flex-wrap items-center gap-2">
           <OfflineBadge offline={!isOnline} />
           <span className="text-sm text-text-secondary">{copy.matchesLocalTime(timeZone)}</span>
         </div>
 
-        <div className="space-y-2.5">
+        <div className="space-y-3">
           <SectionTitle>{copy.filterCompetitions}</SectionTitle>
           <SegmentedTabs options={competitionOptions} value={competition} onChange={setCompetition} compact />
           <SegmentedTabs options={statusOptions} value={status} onChange={setStatus} compact />
@@ -66,7 +66,7 @@ export function MatchesScreen() {
           <EmptyState title={copy.matchesEmpty} description={copy.matchesEmptyDesc} />
         ) : null}
 
-        <div className="space-y-2.5">
+        <div className="space-y-4">
           {query.data?.data.map((fixture) => <FixtureCardView key={fixture.id} fixture={fixture} />)}
         </div>
       </div>
