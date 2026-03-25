@@ -1,0 +1,55 @@
+:root,
+html[data-theme="classic"] {
+  --bg-primary: #07090c;
+  --bg-secondary: #0e131a;
+  --surface: #131a22;
+  --surface-elevated: #18212b;
+  --border-subtle: #243040;
+  --brand-primary: #1266ab;
+  --brand-primary-hover: #0f5a98;
+  --brand-primary-soft: rgba(18, 102, 171, 0.14);
+  --accent-gold: #a39261;
+  --accent-gold-soft: rgba(163, 146, 97, 0.14);
+  --text-primary: #f5f7fa;
+  --text-secondary: #b8c2cf;
+  --text-muted: #7e8a98;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --live: #ff5a5f;
+  --radius-card: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --duration-gentle: 180ms;
+  --duration-slow: 280ms;
+}
+
+html[data-theme="contrast"] {
+  --bg-primary: #05070a;
+  --bg-secondary: #0a1016;
+  --surface: #101720;
+  --surface-elevated: #151f2a;
+  --border-subtle: #2e3e53;
+  --brand-primary: #1b74c0;
+  --brand-primary-hover: #1763a3;
+  --brand-primary-soft: rgba(27, 116, 192, 0.18);
+  --accent-gold: #b6a06a;
+  --accent-gold-soft: rgba(182, 160, 106, 0.16);
+  --text-primary: #fbfdff;
+  --text-secondary: #c8d2de;
+  --text-muted: #8d98a6;
+}
+
+html[data-motion="reduced"] {
+  --duration-gentle: 0ms;
+  --duration-slow: 0ms;
+}

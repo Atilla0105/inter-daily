@@ -1,0 +1,133 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Fixture {
+  id                String   @id @default(cuid())
+  provider          String
+  providerFixtureId String   @unique
+  competitionName   String
+  competitionKey    String
+  season            String
+  stage             String?
+  round             String?
+  venueName         String?
+  homeTeamName      String
+  awayTeamName      String
+  homeTeamShortName String
+  awayTeamShortName String
+  kickoffAtUtc      DateTime
+  status            String
+  scoreHome         Int?
+  scoreAway         Int?
+  isLive            Boolean  @default(false)
+  lastEventAt       DateTime?
+  lastSyncedAt      DateTime @default(now())
+  sourceUrl         String?
+  sourceMetaJson    Json?
+  rawPayloadJson    Json?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  events FixtureEvent[]
+}
+
+model FixtureEvent {
+  id              String   @id @default(cuid())
+  fixtureId       String
+  providerEventId String?
+  minute          Int
+  extraMinute     Int?
+  team            String
+  eventType       String
+  playerName      String?
+  playerInName    String?
+  playerOutName   String?
+  description     String?
+  sortKey         String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  fixture Fixture @relation(fields: [fixtureId], references: [id], onDelete: Cascade)
+
+  @@index([fixtureId])
+}
+
+model StandingsSnapshot {
+  id              String   @id @default(cuid())
+  competitionName String
+  competitionKey  String
+  season          String
+  tableJson       Json
+  snapshotAt      DateTime @default(now())
+  provider        String
+  createdAt       DateTime @default(now())
+}
+
+model Player {
+  id               String   @id @default(cuid())
+  provider         String
+  providerPlayerId String   @unique
+  teamName         String
+  name             String
+  shirtNumber      Int?
+  position         String
+  nationality      String?
+  photoUrl         String?
+  status           String
+  metaJson         Json?
+  lastSyncedAt     DateTime @default(now())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model NewsArticle {
+  id            String   @id @default(cuid())
+  sourceName    String
+  sourceType    String
+  sourceUrl     String
+  canonicalUrl  String   @unique
+  title         String
+  excerpt       String?
+  coverImageUrl String?
+  publishedAt   DateTime
+  category      String
+  contentText   String?
+  aiSummaryJson Json?
+  fingerprint   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model ChangeLog {
+  id           String   @id @default(cuid())
+  entityType   String
+  entityId     String
+  changeType   String
+  oldValueJson Json?
+  newValueJson Json?
+  detectedAt   DateTime @default(now())
+  sourceName   String
+}
+
+model PushSubscription {
+  id                    String   @id @default(cuid())
+  deviceId              String?
+  endpoint              String   @unique
+  p256dh                String
+  auth                  String
+  notificationsEnabled  Boolean  @default(true)
+  matchReminders        Boolean  @default(true)
+  liveEvents            Boolean  @default(true)
+  officialNews          Boolean  @default(true)
+  quietHoursEnabled     Boolean  @default(false)
+  quietHoursStart       String?
+  quietHoursEnd         String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
