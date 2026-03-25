@@ -1,5 +1,47 @@
-const CACHE_NAME = "inter-daily-v1";
+const CACHE_NAME = "inter-daily-v2";
 const OFFLINE_URLS = ["/", "/matches", "/live", "/news", "/my", "/manifest.webmanifest"];
+const STATIC_DESTINATIONS = new Set(["style", "script", "image", "font"]);
+
+async function cacheResponse(request, response) {
+  if (!response.ok || !request.url.startsWith(self.location.origin)) {
+    return response;
+  }
+
+  const cache = await caches.open(CACHE_NAME);
+  await cache.put(request, response.clone());
+  return response;
+}
+
+async function networkFirst(request, fallbackUrl) {
+  try {
+    const response = await fetch(request);
+    return cacheResponse(request, response);
+  } catch {
+    const cached = await caches.match(request);
+    if (cached) {
+      return cached;
+    }
+
+    if (fallbackUrl) {
+      const fallback = await caches.match(fallbackUrl);
+      if (fallback) {
+        return fallback;
+      }
+    }
+
+    return Response.error();
+  }
+}
+
+async function cacheFirst(request) {
+  const cached = await caches.match(request);
+  if (cached) {
+    return cached;
+  }
+
+  const response = await fetch(request);
+  return cacheResponse(request, response);
+}
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -8,6 +50,12 @@ self.addEventListener("install", (event) => {
     })
   );
   self.skipWaiting();
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener("activate", (event) => {
@@ -24,19 +72,26 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      const fetchPromise = fetch(event.request)
-        .then((response) => {
-          if (response.ok && event.request.url.startsWith(self.location.origin)) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          }
-          return response;
-        })
-        .catch(() => cached);
+  const url = new URL(event.request.url);
 
-      return cached ?? fetchPromise;
-    })
-  );
+  if (url.origin !== self.location.origin) {
+    return;
+  }
+
+  if (event.request.mode === "navigate") {
+    event.respondWith(networkFirst(event.request, "/"));
+    return;
+  }
+
+  if (url.pathname.startsWith("/api/")) {
+    event.respondWith(networkFirst(event.request));
+    return;
+  }
+
+  if (STATIC_DESTINATIONS.has(event.request.destination) || url.pathname.startsWith("/_next/static/")) {
+    event.respondWith(cacheFirst(event.request));
+    return;
+  }
+
+  event.respondWith(networkFirst(event.request));
 });
