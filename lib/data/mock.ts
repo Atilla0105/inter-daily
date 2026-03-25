@@ -309,6 +309,28 @@ export const squadSeed: SquadPlayer[] = [
     status: "可出场"
   },
   {
+    id: "player-bisseck",
+    name: "Yann Bisseck",
+    shirtNumber: 31,
+    positionGroup: "后卫",
+    nationality: "德国",
+    birthDate: "2000-11-29",
+    heightCm: 196,
+    photoUrl: null,
+    status: "可出场"
+  },
+  {
+    id: "player-acerbi",
+    name: "Francesco Acerbi",
+    shirtNumber: 15,
+    positionGroup: "后卫",
+    nationality: "意大利",
+    birthDate: "1988-02-10",
+    heightCm: 192,
+    photoUrl: null,
+    status: "可出场"
+  },
+  {
     id: "player-bastoni",
     name: "Alessandro Bastoni",
     shirtNumber: 95,
@@ -316,6 +338,17 @@ export const squadSeed: SquadPlayer[] = [
     nationality: "意大利",
     birthDate: "1999-04-13",
     heightCm: 190,
+    photoUrl: null,
+    status: "可出场"
+  },
+  {
+    id: "player-dumfries",
+    name: "Denzel Dumfries",
+    shirtNumber: 2,
+    positionGroup: "后卫",
+    nationality: "荷兰",
+    birthDate: "1996-04-18",
+    heightCm: 188,
     photoUrl: null,
     status: "可出场"
   },
@@ -360,6 +393,17 @@ export const squadSeed: SquadPlayer[] = [
     nationality: "亚美尼亚",
     birthDate: "1989-01-21",
     heightCm: 177,
+    photoUrl: null,
+    status: "可出场"
+  },
+  {
+    id: "player-frattesi",
+    name: "Davide Frattesi",
+    shirtNumber: 16,
+    positionGroup: "中场",
+    nationality: "意大利",
+    birthDate: "1999-09-22",
+    heightCm: 178,
     photoUrl: null,
     status: "可出场"
   },

@@ -58,7 +58,7 @@ function toPublicFeedItem(item: SocialMirrorRecord): SocialFeedItem {
     postType: item.postType,
     caption: item.caption,
     publishedAt: item.publishedAt,
-    thumbnail: `/api/social/assets/${encodeURIComponent(item.id)}?kind=thumbnail`,
+    thumbnail: item.remoteThumbnailUrl ? `/api/social/assets/${encodeURIComponent(item.id)}?kind=thumbnail` : null,
     mediaUrl: item.remoteMediaUrl ? `/api/social/assets/${encodeURIComponent(item.id)}?kind=media` : null,
     permalink: item.permalink ?? null
   };
@@ -101,7 +101,7 @@ async function loadSocialMirrorRecords() {
 function buildPlaceholderSvg(record?: SocialMirrorRecord | null) {
   const label = record?.sourceLabel ?? "Inter Mirror";
   const badge = record?.postType === "reel" ? "REEL" : "POST";
-  const caption = (record?.caption ?? "社媒镜像内容").slice(0, 54);
+  const caption = (record?.caption ?? "暂时没有可用缩略图").slice(0, 54);
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="960" height="720" viewBox="0 0 960 720" fill="none">
     <rect width="960" height="720" rx="32" fill="#131A22"/>
@@ -114,7 +114,7 @@ function buildPlaceholderSvg(record?: SocialMirrorRecord | null) {
     <text x="148" y="126" fill="#B8C2CF" font-family="system-ui, sans-serif" font-size="18">Inter Daily 社媒镜像</text>
     <rect x="772" y="60" width="112" height="44" rx="22" fill="#1266AB" fill-opacity="0.16" stroke="#1266AB"/>
     <text x="828" y="88" text-anchor="middle" fill="#F5F7FA" font-family="system-ui, sans-serif" font-size="18" font-weight="700">${badge}</text>
-    <text x="64" y="560" fill="#F5F7FA" font-family="system-ui, sans-serif" font-size="40" font-weight="700">镜像已缓存</text>
+    <text x="64" y="560" fill="#F5F7FA" font-family="system-ui, sans-serif" font-size="40" font-weight="700">暂时没有可用缩略图</text>
     <text x="64" y="614" fill="#B8C2CF" font-family="system-ui, sans-serif" font-size="24">${caption}</text>
   </svg>`;
 }

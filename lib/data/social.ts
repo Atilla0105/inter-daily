@@ -49,6 +49,81 @@ export const mirroredSocialAccounts: MirroredSocialAccount[] = [
   }
 ];
 
+export const corePlayerProfiles = [
+  {
+    displayName: "Yann Sommer",
+    roleLabel: "主力门将",
+    lookupKeywords: ["sommer"],
+    socialAccount: null
+  },
+  {
+    displayName: "Yann Bisseck",
+    roleLabel: "机动中卫",
+    lookupKeywords: ["bisseck"],
+    socialAccount: null
+  },
+  {
+    displayName: "Francesco Acerbi",
+    roleLabel: "防线中枢",
+    lookupKeywords: ["acerbi"],
+    socialAccount: null
+  },
+  {
+    displayName: "Alessandro Bastoni",
+    roleLabel: "左中卫核心",
+    lookupKeywords: ["bastoni", "alessandro"],
+    socialAccount: "alebastoni95"
+  },
+  {
+    displayName: "Denzel Dumfries",
+    roleLabel: "右翼卫",
+    lookupKeywords: ["dumfries"],
+    socialAccount: null
+  },
+  {
+    displayName: "Federico Dimarco",
+    roleLabel: "左翼卫",
+    lookupKeywords: ["dimarco"],
+    socialAccount: null
+  },
+  {
+    displayName: "Nicolò Barella",
+    roleLabel: "中场推进核心",
+    lookupKeywords: ["barella", "nicolo"],
+    socialAccount: "nicolo_barella"
+  },
+  {
+    displayName: "Hakan Calhanoglu",
+    roleLabel: "中场节拍器",
+    lookupKeywords: ["calhanoglu", "hakan"],
+    socialAccount: null
+  },
+  {
+    displayName: "Henrikh Mkhitaryan",
+    roleLabel: "经验型中场",
+    lookupKeywords: ["mkhitaryan", "henrikh"],
+    socialAccount: null
+  },
+  {
+    displayName: "Davide Frattesi",
+    roleLabel: "前插型中场",
+    lookupKeywords: ["frattesi", "davide"],
+    socialAccount: null
+  },
+  {
+    displayName: "Marcus Thuram",
+    roleLabel: "锋线主力",
+    lookupKeywords: ["thuram", "marcus"],
+    socialAccount: "thuram"
+  },
+  {
+    displayName: "Lautaro Martínez",
+    roleLabel: "队长 / 中锋",
+    lookupKeywords: ["lautaro", "martinez"],
+    socialAccount: "lautaromartinez"
+  }
+] as const;
+
 export const socialFeedSeed: SocialMirrorRecord[] = [
   {
     id: "mirror-inter-20260325-club-1",
