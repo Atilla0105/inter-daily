@@ -21,7 +21,7 @@ export function SquadScreen() {
 
   return (
     <AppShell pathname="/squad">
-      <div className="space-y-6">
+      <div className="space-y-5">
         {query.isLoading ? <LoadingCards lines={3} /> : null}
         {query.isError ? <ErrorPanel title={copy.squadError} detail={copy.squadErrorDesc} /> : null}
         {query.data?.stale ? <StalePanel syncedAt={query.data.syncedAt} /> : null}
@@ -33,7 +33,7 @@ export function SquadScreen() {
           }
 
           return (
-            <section key={group} className="space-y-3">
+            <section key={group} className="space-y-2.5">
               <SectionTitle>{getPositionLabel(group)}</SectionTitle>
               {players.map((player) => (
                 <Card key={player.id} className="p-4">

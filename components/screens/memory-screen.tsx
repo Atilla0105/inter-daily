@@ -19,7 +19,7 @@ export function MemoryScreen() {
 
   return (
     <AppShell pathname="/memory">
-      <div className="space-y-6">
+      <div className="space-y-5">
         {query.isLoading ? <LoadingCards lines={2} /> : null}
         {query.isError ? <ErrorPanel title={copy.memoryError} detail={copy.memoryErrorDesc} /> : null}
         {query.data?.data.memoryCard ? <MemoryCard item={query.data.data.memoryCard} /> : null}

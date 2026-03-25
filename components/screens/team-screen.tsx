@@ -80,7 +80,6 @@ export function TeamScreen() {
     queryFn: () => fetchApi("/api/team/squad", apiEnvelopeSchema(squadPlayerSchema.array()))
   });
 
-  const clubMirrorAccount = mirroredSocialAccounts.find((account) => account.sourceType === "club");
   const corePlayers = corePlayerProfiles.map((profile) => {
     const player = matchSquadPlayer(profile.lookupKeywords, squadQuery.data?.data ?? []);
     const socialAccount = profile.socialAccount
@@ -93,18 +92,12 @@ export function TeamScreen() {
       socialAccount
     };
   });
-  const syncedCorePlayers = corePlayers.filter((item) => item.player).length;
 
   return (
     <AppShell pathname="/live">
-      <div className="space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <OfflineBadge offline={!isOnline} />
-            <span className="inline-flex items-center rounded-full bg-brand-soft px-3 py-1.5 text-xs text-brand-primary">
-              {copy.syncedEvery}
-            </span>
-          </div>
+      <div className="space-y-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <OfflineBadge offline={!isOnline} />
           <Link href="/squad" className="rounded-full border border-border-subtle px-4 py-2 text-sm text-text-secondary">
             {copy.teamFullSquad}
           </Link>
@@ -116,41 +109,7 @@ export function TeamScreen() {
           <StalePanel syncedAt={socialQuery.data?.syncedAt ?? squadQuery.data?.syncedAt ?? new Date().toISOString()} />
         ) : null}
 
-        <section className="space-y-3">
-          <SectionTitle>{copy.teamDeskTitle}</SectionTitle>
-          <Card elevated className="space-y-4 p-5">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-xl font-semibold tracking-tight text-text-primary">FC Internazionale Milano</p>
-                <p className="mt-2 text-sm leading-6 text-text-secondary">{copy.teamIntro}</p>
-              </div>
-              <div className="rounded-2xl border border-border-subtle bg-bg-secondary px-3 py-2 text-right">
-                <p className="text-[11px] tracking-[0.2em] text-text-muted">{copy.teamSocial}</p>
-                <p className="mt-1 text-sm font-medium text-text-primary">@{clubMirrorAccount?.sourceAccount ?? "inter"}</p>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-2xl bg-white/4 p-3">
-                <p className="text-xs tracking-[0.18em] text-text-muted">{copy.teamInfo}</p>
-                <p className="mt-2 text-sm text-text-primary">{copy.teamInfoDesc}</p>
-              </div>
-              <div className="rounded-2xl bg-white/4 p-3">
-                <p className="text-xs tracking-[0.18em] text-text-muted">{copy.teamMirrorAccounts}</p>
-                <p className="mt-2 text-sm text-text-primary">{copy.teamMirrorAccountsDesc(mirroredSocialAccounts.length)}</p>
-              </div>
-              <div className="rounded-2xl bg-white/4 p-3">
-                <p className="text-xs tracking-[0.18em] text-text-muted">{copy.teamCoreSetup}</p>
-                <p className="mt-2 text-sm text-text-primary">{copy.teamCoreSetupDesc}</p>
-              </div>
-              <div className="rounded-2xl bg-white/4 p-3">
-                <p className="text-xs tracking-[0.18em] text-text-muted">{copy.teamCurrentSync}</p>
-                <p className="mt-2 text-sm text-text-primary">{copy.teamCurrentSyncDesc(syncedCorePlayers, corePlayers.length)}</p>
-              </div>
-            </div>
-          </Card>
-        </section>
-
-        <section className="space-y-3">
+        <section className="space-y-2.5">
           <SectionTitle>{copy.coach}</SectionTitle>
           <Card className="p-5">
             <div className="flex items-start justify-between gap-4">
@@ -166,14 +125,14 @@ export function TeamScreen() {
           </Card>
         </section>
 
-        <section className="space-y-3">
+        <section className="space-y-2.5">
           <SectionTitle action={<span className="text-xs text-text-muted">{copy.coreNote}</span>}>
             {copy.coreTwelve}
           </SectionTitle>
           {squadQuery.isLoading && !squadQuery.data ? <LoadingCards lines={3} /> : null}
           {squadQuery.isError ? <ErrorPanel title={copy.teamNoSquad} detail={copy.teamNoSquadDesc} /> : null}
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2.5">
             {corePlayers.map(({ profile, player, socialAccount }) => (
               <Card key={profile.displayName} className="p-4">
                 <div className="flex items-start justify-between gap-3">
@@ -222,7 +181,7 @@ export function TeamScreen() {
           </div>
         </section>
 
-        <section className="space-y-3">
+        <section className="space-y-2.5">
           <SectionTitle>{copy.teamSocial}</SectionTitle>
           <SegmentedTabs options={sourceOptions} value={sourceType} onChange={setSourceType} compact />
 

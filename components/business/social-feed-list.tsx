@@ -12,7 +12,7 @@ export function SocialFeedList({ items, timeZone }: { items: SocialFeedItem[]; t
   const { getSocialPostLabel, getSocialSourceLabel, formatUiMonthDayTime } = useAppLanguage();
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {items.map((item) => {
         const hasThumbnail = Boolean(item.thumbnail);
 
@@ -43,7 +43,7 @@ export function SocialFeedList({ items, timeZone }: { items: SocialFeedItem[]; t
               </div>
             ) : null}
 
-            <div className={cn("space-y-3", hasThumbnail ? "p-4" : "")}>
+            <div className={cn("space-y-2.5", hasThumbnail ? "p-4" : "")}>
               {!hasThumbnail ? (
                 <div className="flex flex-wrap gap-2">
                   <span className="rounded-full bg-bg-secondary px-2.5 py-1 text-[11px] font-medium text-text-primary">
