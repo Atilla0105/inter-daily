@@ -148,20 +148,53 @@ function mergeNews(primary: NewsItem[], fallback: NewsItem[]) {
   });
 }
 
+function isValidOfficialNews(item: NewsItem) {
+  if (item.sourceType !== "official") {
+    return true;
+  }
+
+  if (item.canonicalUrl.includes("/news/category/")) {
+    return false;
+  }
+
+  return !/^官方新闻\s+\d+$/u.test(item.title);
+}
+
+function filterNewsByCategory(items: NewsItem[], category?: string) {
+  if (!category || category === "all") {
+    return items;
+  }
+
+  if (category === "official") {
+    return items.filter((item) => item.sourceType === "official");
+  }
+
+  return items.filter((item) => item.category === category);
+}
+
+function withNewsFallback(primary: NewsItem[], category?: string) {
+  const sanitized = mergeNews(primary.filter(isValidOfficialNews), []);
+  const filteredPrimary = filterNewsByCategory(sanitized, category);
+
+  if (filteredPrimary.length > 0) {
+    return filteredPrimary;
+  }
+
+  const fallback = mergeNews(topNewsSeed.filter(isValidOfficialNews), []);
+  return filterNewsByCategory(fallback, category);
+}
+
 async function loadNews(category?: string) {
-  const stored = await listStoredNews();
+  const stored = (await listStoredNews()).filter(isValidOfficialNews);
   if (stored.length > 0) {
-    const merged = mergeNews(stored, topNewsSeed);
-    return category && category !== "all" ? merged.filter((item) => item.category === category) : merged;
+    return withNewsFallback(stored, category);
   }
 
   try {
-    const official = await interOfficialProvider.listNews();
-    const merged = mergeNews(official, topNewsSeed);
-    return category && category !== "all" ? merged.filter((item) => item.category === category) : merged;
+    const official = (await interOfficialProvider.listNews()).filter(isValidOfficialNews);
+    return withNewsFallback(official, category);
   } catch {
-    const merged = mergeNews([], topNewsSeed);
-    return category && category !== "all" ? merged.filter((item) => item.category === category) : merged;
+    return withNewsFallback([], category);
   }
 }
 
@@ -360,18 +393,21 @@ export async function getNewsDetailData(id: string): Promise<ApiEnvelope<NewsDet
     }
 
     const stored = await getStoredNewsBySlug(id);
+    const latestNews = await loadNews();
+    const fallbackItem = stored ?? latestNews.find((item) => item.id === id) ?? null;
+
     if (stored && stored.sourceType === "official") {
       try {
         return (await interOfficialProvider.getArticle(stored.canonicalUrl)) ?? {
           ...stored,
           body: stored.excerpt,
-          related: (await loadNews()).filter((item) => item.id !== stored.id).slice(0, 2)
+          related: latestNews.filter((item) => item.id !== stored.id).slice(0, 2)
         };
       } catch {
         return {
           ...stored,
           body: stored.excerpt,
-          related: (await loadNews()).filter((item) => item.id !== stored.id).slice(0, 2)
+          related: latestNews.filter((item) => item.id !== stored.id).slice(0, 2)
         };
       }
     }
@@ -380,7 +416,31 @@ export async function getNewsDetailData(id: string): Promise<ApiEnvelope<NewsDet
       return {
         ...stored,
         body: stored.excerpt,
-        related: (await loadNews()).filter((item) => item.id !== stored.id).slice(0, 2)
+        related: latestNews.filter((item) => item.id !== stored.id).slice(0, 2)
+      };
+    }
+
+    if (fallbackItem?.sourceType === "official") {
+      try {
+        return (await interOfficialProvider.getArticle(fallbackItem.canonicalUrl)) ?? {
+          ...fallbackItem,
+          body: fallbackItem.excerpt,
+          related: latestNews.filter((item) => item.id !== fallbackItem.id).slice(0, 2)
+        };
+      } catch {
+        return {
+          ...fallbackItem,
+          body: fallbackItem.excerpt,
+          related: latestNews.filter((item) => item.id !== fallbackItem.id).slice(0, 2)
+        };
+      }
+    }
+
+    if (fallbackItem) {
+      return {
+        ...fallbackItem,
+        body: fallbackItem.excerpt,
+        related: latestNews.filter((item) => item.id !== fallbackItem.id).slice(0, 2)
       };
     }
 
