@@ -2,19 +2,7 @@
   "crons": [
     {
       "path": "/api/internal/sync/news",
-      "schedule": "*/15 * * * *"
-    },
-    {
-      "path": "/api/internal/sync/fixtures",
-      "schedule": "*/30 * * * *"
-    },
-    {
-      "path": "/api/internal/sync/standings",
-      "schedule": "0 * * * *"
-    },
-    {
-      "path": "/api/internal/sync/live",
-      "schedule": "* * * * *"
+      "schedule": "0 9 * * *"
     }
   ]
 }
