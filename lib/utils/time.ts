@@ -8,7 +8,7 @@ export function formatKickoff(iso: string, timeZone: string) {
 }
 
 export function formatTimeZoneLabel(iso: string, timeZone: string) {
-  return `${formatInTimeZone(iso, timeZone, "EEE HH:mm")} · ${timeZone.replace("_", " ")}`;
+  return `${formatInTimeZone(iso, timeZone, "EEE HH:mm")} · ${timeZone.replaceAll("_", " ")}`;
 }
 
 export function countdownLabel(iso: string, now = new Date()) {
@@ -21,6 +21,10 @@ export function countdownLabel(iso: string, now = new Date()) {
     addSuffix: true
   })
     .replace("about ", "")
+    .replace(" months", "个月")
+    .replace(" month", "个月")
+    .replace(" years", "年")
+    .replace(" year", "年")
     .replace(" hours", "小时")
     .replace(" hour", "小时")
     .replace(" minutes", "分钟")
