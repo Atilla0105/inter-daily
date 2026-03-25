@@ -71,6 +71,20 @@ export function HomeScreen() {
           <>
             {query.data.data.nextFixture ? <NextMatchHero fixture={query.data.data.nextFixture} stale={query.data.stale} /> : null}
 
+            <section className="space-y-3">
+              <SectionTitle
+                eyebrow={copy.briefingEyebrow}
+                action={
+                  <Link href="/news" className="text-sm font-medium text-brand-primary">
+                    {copy.homeAllNews}
+                  </Link>
+                }
+              >
+                {copy.briefingTitle}
+              </SectionTitle>
+              <BriefingPanel editorial={query.data.data.editorial} />
+            </section>
+
             {query.data.data.lastFixture ? (
               <section className="space-y-3">
                 <SectionTitle>{copy.scoreLastResult}</SectionTitle>
@@ -84,11 +98,6 @@ export function HomeScreen() {
                 <StandingsMiniCard standings={query.data.data.standingsSummary} />
               </section>
             ) : null}
-
-            <section className="space-y-3">
-              <SectionTitle eyebrow={copy.briefingEyebrow}>{copy.briefingTitle}</SectionTitle>
-              <BriefingPanel editorial={query.data.data.editorial} />
-            </section>
 
             <section className="space-y-3">
               <SectionTitle

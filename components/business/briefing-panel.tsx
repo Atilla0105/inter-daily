@@ -21,6 +21,13 @@ export function BriefingPanel({ editorial }: BriefingPanelProps) {
     editorial.dailyChanges.length > 0 ||
     editorial.matchStoryline !== null;
 
+  const leadTopNews = editorial.topNews[0] ?? null;
+  const extraTopNews = editorial.topNews.slice(leadTopNews ? 1 : 0);
+  const leadTitle = editorial.matchStoryline?.headline ?? leadTopNews?.title ?? editorial.clubUpdates[0]?.title ?? null;
+  const leadSummary = editorial.matchStoryline?.summary ?? leadTopNews?.summary ?? editorial.clubUpdates[0]?.summary ?? null;
+  const leadChip = editorial.matchStoryline ? copy.briefingStoryline : copy.briefingTopNews;
+  const leadMeta = leadTopNews ? `${leadTopNews.source} · ${formatUiDateTime(leadTopNews.publishedAt)}` : copy.briefingSourceOnly;
+
   if (!hasContent) {
     return (
       <Card elevated className="p-4">
@@ -38,21 +45,26 @@ export function BriefingPanel({ editorial }: BriefingPanelProps) {
   }
 
   return (
-    <div className="space-y-4">
-      {editorial.matchStoryline ? (
-        <Card elevated className="p-4">
-          <div className="mb-3 flex items-center gap-2">
-            <Chip tone="brand">{copy.briefingStoryline}</Chip>
-            <p className="text-xs text-text-muted">{copy.briefingSourceOnly}</p>
+    <div className="space-y-3">
+      {leadTitle && leadSummary ? (
+        <Card elevated className="overflow-hidden p-0">
+          <div className="border-b border-border-subtle bg-brand-soft/70 px-4 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <Chip tone="brand">{leadChip}</Chip>
+              <p className="text-xs text-text-muted">{copy.briefingSourceOnly}</p>
+            </div>
           </div>
-          <h3 className="text-base font-semibold leading-6 text-text-primary">{editorial.matchStoryline.headline}</h3>
-          <p className="mt-2 text-sm leading-6 text-text-secondary">{editorial.matchStoryline.summary}</p>
+          <div className="space-y-3 p-4">
+            <h3 className="text-lg font-semibold leading-7 text-text-primary">{leadTitle}</h3>
+            <p className="text-sm leading-6 text-text-secondary">{leadSummary}</p>
+            <p className="text-xs text-text-muted">{leadMeta}</p>
+          </div>
         </Card>
       ) : null}
 
-      {editorial.topNews.length > 0 ? (
-        <div className="space-y-4">
-          {editorial.topNews.slice(0, 2).map((item) => (
+      {extraTopNews.length > 0 ? (
+        <div className="space-y-3">
+          {extraTopNews.slice(0, 2).map((item) => (
             <Card key={item.url} className="p-4">
               <div className="mb-2 flex items-center justify-between gap-3">
                 <Chip tone="brand">{copy.briefingTopNews}</Chip>
@@ -76,6 +88,44 @@ export function BriefingPanel({ editorial }: BriefingPanelProps) {
               <div key={`${item.title}-${item.publishedAt}`} className="space-y-1">
                 <p className="text-sm font-medium text-text-primary">{item.title}</p>
                 <p className="text-sm leading-6 text-text-secondary">{item.summary}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+      ) : null}
+
+      {editorial.playerWatch.length > 0 ? (
+        <Card className="p-4">
+          <div className="mb-3 flex items-center gap-2">
+            <Chip tone="neutral">{copy.briefingPlayerWatch}</Chip>
+          </div>
+          <div className="space-y-3">
+            {editorial.playerWatch.slice(0, 3).map((item) => (
+              <div key={`${item.player}-${item.publishedAt}`} className="space-y-1">
+                <p className="text-sm font-medium text-text-primary">{item.player}</p>
+                <p className="text-sm leading-6 text-text-secondary">{item.update}</p>
+                <p className="text-xs text-text-muted">
+                  {item.source} · {formatUiDateTime(item.publishedAt)}
+                </p>
+              </div>
+            ))}
+          </div>
+        </Card>
+      ) : null}
+
+      {editorial.injuryTransferWatch.length > 0 ? (
+        <Card className="p-4">
+          <div className="mb-3 flex items-center gap-2">
+            <Chip tone="gold">{copy.briefingWatch}</Chip>
+          </div>
+          <div className="space-y-3">
+            {editorial.injuryTransferWatch.slice(0, 3).map((item) => (
+              <div key={`${item.title}-${item.publishedAt}`} className="space-y-1">
+                <p className="text-sm font-medium text-text-primary">{item.title}</p>
+                <p className="text-sm leading-6 text-text-secondary">{item.summary}</p>
+                <p className="text-xs text-text-muted">
+                  {item.source} · {formatUiDateTime(item.publishedAt)}
+                </p>
               </div>
             ))}
           </div>
