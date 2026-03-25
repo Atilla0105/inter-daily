@@ -8,6 +8,7 @@ import { useAppLanguage } from "@/hooks/use-app-language";
 
 import { Card } from "@/components/base/card";
 import { Chip } from "@/components/base/chip";
+import { TeamCrest } from "@/components/base/team-crest";
 import type { FixtureCard } from "@/lib/types";
 
 import { CountdownDigits } from "./countdown-digits";
@@ -39,9 +40,15 @@ export function NextMatchHero({ fixture, stale = false }: { fixture: FixtureCard
         <p className="text-sm text-text-secondary">{fixture.round}</p>
         <div className="mt-2 flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-[30px] font-semibold tracking-tight text-text-primary">{fixture.homeTeam.shortName}</h2>
-            <p className="mt-1 text-xs tracking-[0.16em] text-text-muted">vs</p>
-            <h2 className="mt-1 text-[30px] font-semibold tracking-tight text-text-primary">{fixture.awayTeam.shortName}</h2>
+            <div className="flex items-center gap-3">
+              <TeamCrest team={fixture.homeTeam} size="lg" />
+              <h2 className="text-[30px] font-semibold tracking-tight text-text-primary">{fixture.homeTeam.shortName}</h2>
+            </div>
+            <p className="pl-[60px] pt-1 text-xs tracking-[0.16em] text-text-muted">vs</p>
+            <div className="mt-1 flex items-center gap-3">
+              <TeamCrest team={fixture.awayTeam} size="lg" />
+              <h2 className="text-[30px] font-semibold tracking-tight text-text-primary">{fixture.awayTeam.shortName}</h2>
+            </div>
           </div>
           <div className="min-w-[88px] text-right">
             <p className="numeric text-[44px] font-semibold leading-none text-text-primary">

@@ -8,6 +8,7 @@ import { useAppLanguage } from "@/hooks/use-app-language";
 
 import { Card } from "@/components/base/card";
 import { Chip } from "@/components/base/chip";
+import { TeamCrest } from "@/components/base/team-crest";
 import type { FixtureCard } from "@/lib/types";
 
 export function FixtureCardView({ fixture }: { fixture: FixtureCard }) {
@@ -28,8 +29,14 @@ export function FixtureCardView({ fixture }: { fixture: FixtureCard }) {
         </div>
         <div className="flex items-center justify-between gap-4">
           <div className="space-y-2">
-            <p className="text-base font-semibold text-text-primary">{fixture.homeTeam.shortName}</p>
-            <p className="text-base font-semibold text-text-primary">{fixture.awayTeam.shortName}</p>
+            <div className="flex items-center gap-3">
+              <TeamCrest team={fixture.homeTeam} size="sm" />
+              <p className="text-base font-semibold text-text-primary">{fixture.homeTeam.shortName}</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <TeamCrest team={fixture.awayTeam} size="sm" />
+              <p className="text-base font-semibold text-text-primary">{fixture.awayTeam.shortName}</p>
+            </div>
           </div>
           <div className="text-right">
             <p className="numeric text-3xl font-semibold text-text-primary">

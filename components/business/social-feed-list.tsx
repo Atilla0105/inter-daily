@@ -12,7 +12,7 @@ export function SocialFeedList({ items, timeZone }: { items: SocialFeedItem[]; t
   const { getSocialPostLabel, getSocialSourceLabel, formatUiMonthDayTime } = useAppLanguage();
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2.5">
       {items.map((item) => {
         const hasThumbnail = Boolean(item.thumbnail);
 

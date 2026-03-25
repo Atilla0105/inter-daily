@@ -13,6 +13,20 @@ type StoredChangeInput = {
   sourceName: string;
 };
 
+function readStoredTeamMeta(sourceMetaJson: Prisma.JsonValue | null | undefined, key: "homeTeam" | "awayTeam") {
+  if (typeof sourceMetaJson !== "object" || sourceMetaJson === null || Array.isArray(sourceMetaJson)) {
+    return null;
+  }
+
+  const meta = sourceMetaJson as Prisma.JsonObject;
+  if (!(key in meta)) {
+    return null;
+  }
+
+  const value = meta[key];
+  return typeof value === "object" && value !== null ? (value as Record<string, unknown>) : null;
+}
+
 export async function listStoredFixtures(timeZone: string): Promise<FixtureCard[]> {
   if (!prisma) {
     return [];
@@ -24,48 +38,55 @@ export async function listStoredFixtures(timeZone: string): Promise<FixtureCard[
     }
   });
 
-  return rows.map((row) => ({
-    id: row.providerFixtureId,
-    competition: (row.competitionKey as FixtureCard["competition"]) ?? "serie-a",
-    competitionLabel: row.competitionName || competitionLabel(row.competitionKey as FixtureCard["competition"]),
-    round: row.round ?? "待确认轮次",
-    venue: row.venueName ?? "待确认球场",
-    stage: row.stage ?? "比赛",
-    kickoffAtUtc: row.kickoffAtUtc.toISOString(),
-    kickoffDisplay: formatKickoff(row.kickoffAtUtc.toISOString(), timeZone),
-    localTimeLabel: formatTimeZoneLabel(row.kickoffAtUtc.toISOString(), timeZone),
-    isHome: row.homeTeamName.includes("Inter"),
-    status: row.status as FixtureCard["status"],
-    statusLabel: statusLabel(row.status as FixtureCard["status"]),
-    statusTone: statusTone(row.status as FixtureCard["status"]),
-    homeTeam: {
-      id: `${row.providerFixtureId}-home`,
-      name: row.homeTeamName,
-      shortName: row.homeTeamShortName,
-      score: row.scoreHome
-    },
-    awayTeam: {
-      id: `${row.providerFixtureId}-away`,
-      name: row.awayTeamName,
-      shortName: row.awayTeamShortName,
-      score: row.scoreAway
-    },
-    countdownLabel:
-      row.status === "SCHEDULED"
-        ? countdownLabel(row.kickoffAtUtc.toISOString())
-        : row.isLive
-          ? "实时同步中"
+  return rows.map((row) => {
+    const homeTeamMeta = readStoredTeamMeta(row.sourceMetaJson, "homeTeam");
+    const awayTeamMeta = readStoredTeamMeta(row.sourceMetaJson, "awayTeam");
+
+    return {
+      id: row.providerFixtureId,
+      competition: (row.competitionKey as FixtureCard["competition"]) ?? "serie-a",
+      competitionLabel: row.competitionName || competitionLabel(row.competitionKey as FixtureCard["competition"]),
+      round: row.round ?? "待确认轮次",
+      venue: row.venueName ?? "待确认球场",
+      stage: row.stage ?? "比赛",
+      kickoffAtUtc: row.kickoffAtUtc.toISOString(),
+      kickoffDisplay: formatKickoff(row.kickoffAtUtc.toISOString(), timeZone),
+      localTimeLabel: formatTimeZoneLabel(row.kickoffAtUtc.toISOString(), timeZone),
+      isHome: row.homeTeamName.includes("Inter"),
+      status: row.status as FixtureCard["status"],
+      statusLabel: statusLabel(row.status as FixtureCard["status"]),
+      statusTone: statusTone(row.status as FixtureCard["status"]),
+      homeTeam: {
+        id: typeof homeTeamMeta?.id === "string" ? homeTeamMeta.id : `${row.providerFixtureId}-home`,
+        name: row.homeTeamName,
+        shortName: row.homeTeamShortName,
+        crestUrl: typeof homeTeamMeta?.crestUrl === "string" ? homeTeamMeta.crestUrl : null,
+        score: row.scoreHome
+      },
+      awayTeam: {
+        id: typeof awayTeamMeta?.id === "string" ? awayTeamMeta.id : `${row.providerFixtureId}-away`,
+        name: row.awayTeamName,
+        shortName: row.awayTeamShortName,
+        crestUrl: typeof awayTeamMeta?.crestUrl === "string" ? awayTeamMeta.crestUrl : null,
+        score: row.scoreAway
+      },
+      countdownLabel:
+        row.status === "SCHEDULED"
+          ? countdownLabel(row.kickoffAtUtc.toISOString())
+          : row.isLive
+            ? "实时同步中"
+            : null,
+      keyStory:
+        typeof row.sourceMetaJson === "object" &&
+        row.sourceMetaJson !== null &&
+        "keyStory" in row.sourceMetaJson &&
+        typeof row.sourceMetaJson.keyStory === "string"
+          ? row.sourceMetaJson.keyStory
           : null,
-    keyStory:
-      typeof row.sourceMetaJson === "object" &&
-      row.sourceMetaJson !== null &&
-      "keyStory" in row.sourceMetaJson &&
-      typeof row.sourceMetaJson.keyStory === "string"
-        ? row.sourceMetaJson.keyStory
-        : null,
-    hasReminder: false,
-    stale: false
-  }));
+      hasReminder: false,
+      stale: false
+    };
+  });
 }
 
 export async function getStoredFixture(providerFixtureId: string, timeZone: string): Promise<FixtureCard | null> {
@@ -83,6 +104,9 @@ export async function getStoredFixture(providerFixtureId: string, timeZone: stri
     return null;
   }
 
+  const homeTeamMeta = readStoredTeamMeta(row.sourceMetaJson, "homeTeam");
+  const awayTeamMeta = readStoredTeamMeta(row.sourceMetaJson, "awayTeam");
+
   return {
     id: row.providerFixtureId,
     competition: (row.competitionKey as FixtureCard["competition"]) ?? "serie-a",
@@ -98,15 +122,17 @@ export async function getStoredFixture(providerFixtureId: string, timeZone: stri
     statusLabel: statusLabel(row.status as FixtureCard["status"]),
     statusTone: statusTone(row.status as FixtureCard["status"]),
     homeTeam: {
-      id: `${row.providerFixtureId}-home`,
+      id: typeof homeTeamMeta?.id === "string" ? homeTeamMeta.id : `${row.providerFixtureId}-home`,
       name: row.homeTeamName,
       shortName: row.homeTeamShortName,
+      crestUrl: typeof homeTeamMeta?.crestUrl === "string" ? homeTeamMeta.crestUrl : null,
       score: row.scoreHome
     },
     awayTeam: {
-      id: `${row.providerFixtureId}-away`,
+      id: typeof awayTeamMeta?.id === "string" ? awayTeamMeta.id : `${row.providerFixtureId}-away`,
       name: row.awayTeamName,
       shortName: row.awayTeamShortName,
+      crestUrl: typeof awayTeamMeta?.crestUrl === "string" ? awayTeamMeta.crestUrl : null,
       score: row.scoreAway
     },
     countdownLabel:
@@ -156,7 +182,15 @@ export async function upsertFixtures(input: FixtureCard[], sourceName: string) {
         isLive: fixture.status === "LIVE",
         lastSyncedAt: new Date(),
         sourceMetaJson: {
-          keyStory: fixture.keyStory
+          keyStory: fixture.keyStory,
+          homeTeam: {
+            id: fixture.homeTeam.id,
+            crestUrl: fixture.homeTeam.crestUrl ?? null
+          },
+          awayTeam: {
+            id: fixture.awayTeam.id,
+            crestUrl: fixture.awayTeam.crestUrl ?? null
+          }
         }
       },
       create: {
@@ -179,7 +213,15 @@ export async function upsertFixtures(input: FixtureCard[], sourceName: string) {
         isLive: fixture.status === "LIVE",
         lastSyncedAt: new Date(),
         sourceMetaJson: {
-          keyStory: fixture.keyStory
+          keyStory: fixture.keyStory,
+          homeTeam: {
+            id: fixture.homeTeam.id,
+            crestUrl: fixture.homeTeam.crestUrl ?? null
+          },
+          awayTeam: {
+            id: fixture.awayTeam.id,
+            crestUrl: fixture.awayTeam.crestUrl ?? null
+          }
         }
       }
     });

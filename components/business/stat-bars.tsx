@@ -7,7 +7,7 @@ function toPercent(value: string) {
 
 export function StatBars({ items }: { items: MatchStat[] }) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-2.5">
       {items.map((item) => {
         const homeValue = toPercent(item.home) || Number.parseInt(item.home, 10);
         const awayValue = toPercent(item.away) || Number.parseInt(item.away, 10);

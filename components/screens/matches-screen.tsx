@@ -66,7 +66,7 @@ export function MatchesScreen() {
           <EmptyState title={copy.matchesEmpty} description={copy.matchesEmptyDesc} />
         ) : null}
 
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           {query.data?.data.map((fixture) => <FixtureCardView key={fixture.id} fixture={fixture} />)}
         </div>
       </div>
