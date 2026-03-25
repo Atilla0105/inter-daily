@@ -164,7 +164,7 @@ export async function getDailyBriefingData(): Promise<ApiEnvelope<HomeEditorial>
       getCachedOrLoad("briefing:daily", briefingCacheTtlSeconds, async () => {
         const sourceBundle = await buildSourceBundle();
         if (sourceBundle.articles.length === 0) {
-          return createBriefingFallback();
+          return sourceBundle.listing.length > 0 ? buildFallbackBriefingFromSources(sourceBundle) : createBriefingFallback();
         }
 
         const response = await deepseek.chat.completions.create({
